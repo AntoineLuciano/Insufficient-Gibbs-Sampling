@@ -25,24 +25,19 @@ def truncated(loc, scale, shape=1, a=-np.inf, b=np.inf, distribution="normal", s
         ub = np.arctan(b) / np.pi + 0.5
         U = np.random.uniform(ua, ub, size=size)
         res = loc + scale * np.tan(np.pi * (U - 0.5))
-    elif distribution == "weibull" or distribution== "weibull2":
+    elif distribution == "translated_weibull" or distribution== "weibull":
         #print(np.min(a),np.max(b))
-        if distribution=="weibull2":loc=0
+        if distribution=="weibull":loc=0
         a=a*scale+loc
         b=b*scale+loc
         a=np.where(a<=loc,loc,a)
         b=np.where(b<=loc,loc,b)
-        #print(b)
-        #print(np.array([a,b]).T)
-        #print(np.min(a),np.max(b))
+
         ua = np.round(weibull_min.cdf(a, c=shape, scale=scale, loc=loc),8)
         ub= np.round(weibull_min.cdf(b, c=shape, scale=scale, loc=loc),8)
 
         U = np.random.uniform(ua, ub, size=size)
-        #print("Par= ",np.unique(loc),np.unique(scale),np.unique(shape))
-        #print("test=",np.min(test),np.max(test))
         res = weibull_min.ppf(U, c=shape, scale=scale, loc=loc)
-        #print("res=",np.min(res),np.max(res))
     return res
 
 
@@ -55,7 +50,7 @@ def truncated_2inter(mean, std, a, b, c, d, shape = 1, distribution="normal",siz
         F = lambda x :  norm.cdf((np.log(x)-mean)/std)
     elif distribution == "cauchy":
         F = cauchy(loc=mean, scale=std).cdf
-    elif distribution == "weibull" or distribution== "weibull2":
+    elif distribution == "translated_weibull" or distribution== "weibull":
         F= weibull_min(c=shape, scale=std, loc=mean).cdf
         if std<=0: print(mean,std)
         
