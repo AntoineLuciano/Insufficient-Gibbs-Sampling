@@ -14,7 +14,7 @@ Install via clone the repository and install via pip
 
 ```shell
 git clone https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling
-
+```
 ## Available models/likelihood
 * Normal distribution (`distribution="normal"`)
 * Cauchy distribution (`distribution="cauchy"`)
