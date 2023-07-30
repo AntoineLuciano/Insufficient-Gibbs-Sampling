@@ -25,7 +25,9 @@ git clone https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling
 * Normal (`par_loc="normal"`)
 * Cauchy (`par_loc="cauchy"`)
 * Gamma (`par_loc="gamma"`)
-
+## Available scale priors
+* Gamma (`par_loc="gamma"`)
+* Jeffreys (`par_loc="jeffreys"`)
 ## Available scale and shape priors
 * Gamma (`par_loc="gamma"`)
 
