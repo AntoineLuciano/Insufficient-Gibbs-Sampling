@@ -1,7 +1,7 @@
 # Insufficient-Gibbs-Sampling
 
 
-`Robust_Gibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (coming soon!). Additionally, the code responsible for generating all the figures in the paper can be located in the `figures` file.
+`Robust_Gibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (\url{https://arxiv.org/abs/2307.14973}). Additionally, the code responsible for generating all the figures in the paper can be located in the `figures` file.
 
 ## Robust Gibbs package
 
