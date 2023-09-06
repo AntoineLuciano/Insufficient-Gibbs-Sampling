@@ -8,7 +8,6 @@
 We propose here three main functions named `Gibbs_med_MAD`, `Gibbs_med_IQR` and `Gibbs_Quantile` to cover the case when we observe the pairs (median, MAD) or (median, IQR) or a sequence of quantiles. 
 
 
-## Install
 
 ## Install
 
