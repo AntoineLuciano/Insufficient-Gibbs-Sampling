@@ -38,7 +38,7 @@ pip install .
 ## Available scale priors
 * Gamma (`par_loc="gamma"`)
 * Jeffreys (`par_loc="jeffreys"`)
-## Available scale and shape priors
+## Available shape priors
 * Gamma (`par_loc="gamma"`)
 
 
