@@ -1,13 +1,11 @@
 # Insufficient-Gibbs-Sampling
 
 
-`RobustGibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the figures in the paper can be located in the `figures` file.
+`RobustGibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the paper figures can be located in the `figures` folder.
 
 ## Robust Gibbs package
 
 We propose here three main functions named `Gibbs_med_MAD`, `Gibbs_med_IQR` and `Gibbs_Quantile` to cover the case when we observe the pairs (median, MAD) or (median, IQR) or a sequence of quantiles. 
-
-
 
 ## Install
 

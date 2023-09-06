@@ -3,9 +3,9 @@ import scipy
 from scipy.stats import norm, cauchy, weibull_min,iqr
 from tqdm import tqdm
 
-from truncated import *
-from posterior_sample import posterior
 
+from RobustGibbs.truncated import *
+from RobustGibbs.postertior_sample import posterior
 
 def medIQR(X):
     return np.round([np.median(X), iqr(X)], 8)

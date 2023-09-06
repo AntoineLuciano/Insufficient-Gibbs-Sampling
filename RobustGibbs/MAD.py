@@ -1,45 +1,53 @@
 import numpy as np
-from scipy.stats import median_abs_deviation,norm,cauchy,weibull_min
+from scipy.stats import median_abs_deviation, norm, cauchy, weibull_min
 from tqdm import tqdm
 
 
-from truncated import *
-from postertior_sample import *
+from RobustGibbs.truncated import *
+from RobustGibbs.postertior_sample import posterior
+
 
 def medMAD(X):
     return (np.median(X), median_abs_deviation(X))
 
+
 def MAD_init(N, med, MAD, distribution):
     loc, scale, shape = 0, 1, 1.5
-        
-        
-    if distribution in ["lognormal","weibull"]:
+
+    if distribution in ["lognormal", "weibull"]:
         if MAD > med:
-            raise Exception("ERROR: MAD > med impossible for {} distribution !".format(distribution))
+            raise Exception(
+                "ERROR: MAD > med impossible for {} distribution !".format(distribution)
+            )
         n = N // 2
         k = np.ceil(n / 2)
         if distribution == "lognormal":
-            init_theta = [np.log(med), MAD / med,None]
-            par_names=["loc","scale"]
-        elif distribution=="weibull":
-            init_theta = [0,med/np.log(2),shape]
-            par_names=["scale","shape"]
-        
+            init_theta = [np.log(med), MAD / med, None]
+            par_names = ["loc", "scale"]
+        elif distribution == "weibull":
+            init_theta = [0, med / np.log(2), shape]
+            par_names = ["scale", "shape"]
+
         if N % 2 == 0:
-            return np.repeat(
-                [
-                    med-.01*MAD,
-                    med+.01*MAD,
-                    med + MAD * 0.99,
-                    med + MAD * 1.01,
-                    med - 1.5 * MAD,
-                    med - 0.5 * MAD,
-                    med + 0.5 * MAD,
-                    med + 1.5 * MAD,
-                ],
-                [1, 1, 1, 1, n - k, k - 1, n - k - 2, k - 1],
-            ),init_theta,par_names
-        return np.repeat(
+            return (
+                np.repeat(
+                    [
+                        med - 0.01 * MAD,
+                        med + 0.01 * MAD,
+                        med + MAD * 0.99,
+                        med + MAD * 1.01,
+                        med - 1.5 * MAD,
+                        med - 0.5 * MAD,
+                        med + 0.5 * MAD,
+                        med + 1.5 * MAD,
+                    ],
+                    [1, 1, 1, 1, n - k, k - 1, n - k - 2, k - 1],
+                ),
+                init_theta,
+                par_names,
+            )
+        return (
+            np.repeat(
                 [
                     med,
                     med + MAD,
@@ -49,28 +57,32 @@ def MAD_init(N, med, MAD, distribution):
                     med + 1.5 * MAD,
                 ],
                 [1, 1, n - k + 1, k - 1, n - k, k - 1],
-            ),init_theta,par_names
+            ),
+            init_theta,
+            par_names,
+        )
     if distribution == "normal":
         Z = norm(loc=loc, scale=scale).rvs(N)
-        par_names=["loc","scale"]
+        par_names = ["loc", "scale"]
     elif distribution == "cauchy":
-        Z =cauchy(loc=loc, scale=scale).rvs(N)
-        par_names=["loc","scale"]
+        Z = cauchy(loc=loc, scale=scale).rvs(N)
+        par_names = ["loc", "scale"]
     elif distribution == "translated_weibull":
-        Z =weibull_min(c=shape, loc=loc, scale=scale).rvs(N)
-        par_names=["loc","scale","shape"]
-    else : raise Exception("ERROR: distribution {} not implemented !".format(distribution))
+        Z = weibull_min(c=shape, loc=loc, scale=scale).rvs(N)
+        par_names = ["loc", "scale", "shape"]
+    else:
+        raise Exception("ERROR: distribution {} not implemented !".format(distribution))
     m_Z, s_Z = medMAD(Z)
-    X_0=np.round((Z - m_Z) / s_Z * MAD + med, 8)
-    
-    if distribution == "normal":
-        init_theta = [med, MAD * 1.4826,shape]
-    elif distribution == "cauchy":
-        init_theta = [med, MAD,shape]
-    elif distribution == "translated_weibull":
-        init_theta = [(loc- m_Z) / s_Z * MAD + med, scale*MAD/s_Z, shape]
+    X_0 = np.round((Z - m_Z) / s_Z * MAD + med, 8)
 
-    return X_0, np.round(init_theta,8),par_names
+    if distribution == "normal":
+        init_theta = [med, MAD * 1.4826, shape]
+    elif distribution == "cauchy":
+        init_theta = [med, MAD, shape]
+    elif distribution == "translated_weibull":
+        init_theta = [(loc - m_Z) / s_Z * MAD + med, scale * MAD / s_Z, shape]
+
+    return X_0, np.round(init_theta, 8), par_names
 
 
 def resampling_even(
@@ -103,7 +115,7 @@ def resampling_even(
             par = [MAD1, MAD2, Xmad1, Xmad2, i_MAD1, i_MAD2, med1, med2]
         par = np.round(par, 8)
         [MAD1, MAD2, Xmad1, Xmad2, i_MAD1, i_MAD2, med1, med2] = par
-        
+
         xi = np.round(xi, 8)
         if xi == med1:
             return "med1"
@@ -119,11 +131,11 @@ def resampling_even(
             return "med-MAD2"
         elif xi < np.round(med - MAD2, 8):
             return 1
-        elif np.round(med - MAD1,8) < xi < med1:
+        elif np.round(med - MAD1, 8) < xi < med1:
             return 2
-        elif med2 < xi < np.round(med + MAD1,8):
+        elif med2 < xi < np.round(med + MAD1, 8):
             return 3
-        elif xi > np.round(med + MAD2,8):
+        elif xi > np.round(med + MAD2, 8):
             return 4
         else:
             print(
@@ -195,12 +207,12 @@ def resampling_even(
             return med + MAD1, med + MAD2
         else:
             return med + MAD2, np.inf
-        
-    loc,scale,shape=theta
+
+    loc, scale, shape = theta
     if index == None:
         index = np.random.choice(len(X), 2, replace=False)
     X = np.array(X)
-    xij = np.round(X[index],8)
+    xij = np.round(X[index], 8)
     xi, xj = xij[0], xij[1]
     n = len(X) // 2
     if len(par) == 0:
@@ -217,7 +229,7 @@ def resampling_even(
 
     par = np.round(par, 8)
 
-    MAD1, MAD2, Xmad1, Xmad2, i_MAD1, i_MAD2, med1, med2 = np.round(par,8)
+    MAD1, MAD2, Xmad1, Xmad2, i_MAD1, i_MAD2, med1, med2 = np.round(par, 8)
     change_med = False
     change_MAD = False
 
@@ -245,7 +257,8 @@ def resampling_even(
         if xi < med and xj < med:
             case = "2b"
             a, b = med - MAD2 - epsilon, med - MAD1 + epsilon
-            if a >= b: raise Exception("ERROR in med,MAD perturbation (case 2b) !")
+            if a >= b:
+                raise Exception("ERROR in med,MAD perturbation (case 2b) !")
             xnew1 = truncated(
                 a=(a - loc) / scale,
                 b=(b - loc) / scale,
@@ -262,7 +275,7 @@ def resampling_even(
             a, b = med + MAD1 - epsilon, med + MAD2 + epsilon
             if a >= b:
                 raise Exception("ERROR in med,MAD perturbation (case 2a) !")
-   
+
             xnew1 = truncated(
                 a=(a - loc) / scale,
                 b=(b - loc) / scale,
@@ -283,7 +296,7 @@ def resampling_even(
             )
             if a1 >= b1 or a2 >= b2:
                 raise Exception("ERROR in med,MAD perturbation (case 2c) !")
-    
+
             xnew1 = truncated_2inter(
                 loc, scale, a1, b1, a2, b2, distribution=distribution, shape=shape
             )[0]
@@ -297,9 +310,12 @@ def resampling_even(
         case = "3"
         xnew1, xnew2 = xi, xj
     elif med1 in xij or med2 in xij:
-        if xi in [med1, med2]: xm, xother = xi, xj
-        elif xj in [med1, med2]: xm, xother = xj, xi
-        else: raise Exception("ERROR in med,MAD perturbation (case 4) !")
+        if xi in [med1, med2]:
+            xm, xother = xi, xj
+        elif xj in [med1, med2]:
+            xm, xother = xj, xi
+        else:
+            raise Exception("ERROR in med,MAD perturbation (case 4) !")
         if xm == med1 and med + MAD1 > xother > med:
             case = "4a"
             a, b = med, med + MAD1
@@ -404,7 +420,8 @@ def resampling_even(
                     Xmad1 = sym(med, Xmad1)
                 elif xmad == Xmad2:
                     Xmad2 = sym(med, Xmad2)
-                else: raise Exception("ERROR in med,MAD perturbation (case 5c) !")
+                else:
+                    raise Exception("ERROR in med,MAD perturbation (case 5c) !")
             else:
                 xnew2 = xmad
 
@@ -590,15 +607,18 @@ def resampling_even(
             np.argsort([np.abs(xnew1 - med), np.abs(xnew2 - med)])
         ].reshape(-1)
         [i_MAD1, i_MAD2] = np.array(index)[
-            np.argsort([np.abs(xnew1 - med), np.abs(xnew2 - med)])]
-        
+            np.argsort([np.abs(xnew1 - med), np.abs(xnew2 - med)])
+        ]
+
     par = np.round(
         np.array([MAD1, MAD2, Xmad1, Xmad2, i_MAD1, i_MAD2, med1, med2]).squeeze(), 8
     )
 
     return X, par, case
 
-## ODD CASE 
+
+## ODD CASE
+
 
 def resampling_odd(
     X,
@@ -661,8 +681,8 @@ def resampling_odd(
             return med, np.round(med + MAD, 8)
         else:
             return np.round(med + MAD, 8), np.inf
-    
-    loc,scale,shape=theta
+
+    loc, scale, shape = theta
     if index == None:
         index = np.random.choice(len(X), 2, replace=False)
     xij = np.round(X[index], 8)
@@ -846,57 +866,57 @@ def resampling_med_MAD(
         MAD=MAD,
         par=par,
         distribution=distribution,
-        )
+    )
+
 
 ### GIBBS SAMPLER
 
+
 def Gibbs_med_MAD(
-    T : int,
+    T: int,
     N: int,
-    med : float,
-    MAD : float,
-    distribution: str="normal",
-    prior_loc:str="normal",
-    prior_scale:str="gamma",
-    prior_shape:str="gamma",
-    par_prior_loc:list=[0, 1],
-    par_prior_scale:list=[0, 1],
-    par_prior_shape:list=[0, 1],
-    std_prop_loc:float=0.1,
-    std_prop_scale:float=0.1,
-    std_prop_shape:float=0.1,
-    List_X:bool=False,
-    verbose:bool=True,
-)-> dict:
+    med: float,
+    MAD: float,
+    distribution: str = "normal",
+    prior_loc: str = "normal",
+    prior_scale: str = "gamma",
+    prior_shape: str = "gamma",
+    par_prior_loc: list = [0, 1],
+    par_prior_scale: list = [0, 1],
+    par_prior_shape: list = [0, 1],
+    std_prop_loc: float = 0.1,
+    std_prop_scale: float = 0.1,
+    std_prop_shape: float = 0.1,
+    List_X: bool = False,
+    verbose: bool = True,
+) -> dict:
     """Gibbs sampler to sample from the posterior of model parameters given the median and MAD of the data.
 
-   Args:
-    T (int): Number of iterations.
-    N (int): Size of the vector X. 
-    med (float): Observed median.
-    MAD (float): Observed MAD (Median Absolute Deviation)
-    distribution (str): Distribution of the data ("normal", "cauchy", "weibull", or "translated_weibull").
-    prior_loc (str): Prior distribution of the location parameter ("normal", "cauchy", "uniform", or "none").
-    prior_scale (str): Prior distribution of the scale parameter ("gamma","jeffreys").
-    prior_shape (str): Prior distribution of the shape parameter ("gamma").
-    par_prior_loc (list, optional): Prior hyperparameters for the location parameter. Defaults to [0, 1].
-    par_prior_scale (list, optional): Prior hyperparameters for the scale parameter. Defaults to [1, 1].
-    par_prior_shape (list, optional): Prior hyperparameters for the shape parameter. Defaults to [0, 1].
-    std_prop_loc (float, optional): Standard deviation of the RWMH Kernel for the location parameter. Defaults to 0.1.
-    std_prop_scale (float, optional): Standard deviation of the RWMH Kernel for the scale parameter. Defaults to 0.1.
-    std_prop_shape (float, optional): Standard deviation of the RWMH Kernel for the shape parameter. Defaults to 0.1.
-    List_X (bool, optional): If True, will return the list of all latent vectors X. Otherwise, it will return the first and the last. Defaults to False.
-    verbose (bool, optional): If True, will display the progression of the sampling. Defaults to True.
-Returns:
-    A dictionary containing:
-        chains (dict): The chains sampled from the parameters' posterior.
-        X (list): List of latent vectors. 
-        ... input parameters
-"""
+       Args:
+        T (int): Number of iterations.
+        N (int): Size of the vector X.
+        med (float): Observed median.
+        MAD (float): Observed MAD (Median Absolute Deviation)
+        distribution (str): Distribution of the data ("normal", "cauchy", "weibull", or "translated_weibull").
+        prior_loc (str): Prior distribution of the location parameter ("normal", "cauchy", "uniform", or "none").
+        prior_scale (str): Prior distribution of the scale parameter ("gamma","jeffreys").
+        prior_shape (str): Prior distribution of the shape parameter ("gamma").
+        par_prior_loc (list, optional): Prior hyperparameters for the location parameter. Defaults to [0, 1].
+        par_prior_scale (list, optional): Prior hyperparameters for the scale parameter. Defaults to [1, 1].
+        par_prior_shape (list, optional): Prior hyperparameters for the shape parameter. Defaults to [0, 1].
+        std_prop_loc (float, optional): Standard deviation of the RWMH Kernel for the location parameter. Defaults to 0.1.
+        std_prop_scale (float, optional): Standard deviation of the RWMH Kernel for the scale parameter. Defaults to 0.1.
+        std_prop_shape (float, optional): Standard deviation of the RWMH Kernel for the shape parameter. Defaults to 0.1.
+        List_X (bool, optional): If True, will return the list of all latent vectors X. Otherwise, it will return the first and the last. Defaults to False.
+        verbose (bool, optional): If True, will display the progression of the sampling. Defaults to True.
+    Returns:
+        A dictionary containing:
+            chains (dict): The chains sampled from the parameters' posterior.
+            X (list): List of latent vectors.
+            ... input parameters"""
 
-    
-    med,MAD=np.round([med,MAD],8)
-    X_0,init_theta,par_names=MAD_init(N, med, MAD, distribution)
+    med, MAD = np.round([med, MAD], 8)
+    X_0, init_theta, par_names = MAD_init(N, med, MAD, distribution)
     Theta = [init_theta]
     X_list = [X_0]
     par = []
@@ -912,12 +932,12 @@ Returns:
             MAD=MAD,
             distribution=distribution,
             par=par,
-            )
+        )
 
         theta = posterior(
             X,
             Theta[-1],
-            distribution, 
+            distribution,
             prior_loc,
             prior_scale,
             prior_shape,
@@ -929,21 +949,26 @@ Returns:
             std_prop_shape,
         )
         Theta.append(theta)
-        if List_X:X_list.append(X.copy())
-        
-    if not (List_X):X_list.append(X.copy())
-    
+        if List_X:
+            X_list.append(X.copy())
+
+    if not (List_X):
+        X_list.append(X.copy())
+
     Theta = np.array(Theta).T
-    chains0={par_name:Theta[i] for i,par_name in enumerate(["loc","scale","shape"])}
+    chains0 = {
+        par_name: Theta[i] for i, par_name in enumerate(["loc", "scale", "shape"])
+    }
     chains = {par_name: chains0[par_name] for par_name in par_names}
-    if verbose and prior_loc!="NIG":
-        
-        acceptation_rate=[(len(np.unique(chains[par_name]))-1)/T for par_name in par_names]
-        print('Acceptation rates MH :',end=" ")
+    if verbose and prior_loc != "NIG":
+        acceptation_rate = [
+            (len(np.unique(chains[par_name])) - 1) / T for par_name in par_names
+        ]
+        print("Acceptation rates MH :", end=" ")
         for i in range(len(par_names)):
-            print("{} = {:.2%}".format(par_names[i],acceptation_rate[i]),end=" ")
+            print("{} = {:.2%}".format(par_names[i], acceptation_rate[i]), end=" ")
         print()
-    
+
     return {
         "X": X_list,
         "chains": chains,
@@ -951,12 +976,11 @@ Returns:
         "med": med,
         "MAD": MAD,
         "distribution": distribution,
-        "prior_loc":prior_loc,
+        "prior_loc": prior_loc,
         "prior_scale": prior_scale,
         "prior_shape": prior_shape,
         "par_prior_loc": par_prior_loc,
         "par_prior_scale": par_prior_scale,
         "par_prior_shape": par_prior_shape,
-        
         "T": T,
     }

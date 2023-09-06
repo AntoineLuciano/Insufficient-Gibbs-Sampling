@@ -1,11 +1,13 @@
 import numpy as np
 from scipy.stats import weibull_min, norm, cauchy, lognorm
 from tqdm import tqdm
-from truncated import *
-from postertior_sample import *
 
+
+from RobustGibbs.truncated import *
+from RobustGibbs.postertior_sample import posterior
 
 ### INITIALISATION
+
 
 def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
     loc, scale, shape = 0, 1, 1
@@ -74,6 +76,7 @@ def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
 
 
 ### RESAMPLING
+
 
 def OrderStats_MH(Q_val, Q_sim, Q_tot, N, theta, K, I, G, distribution, std_prop):
     def log_density(X, I, loc, scale, distribution, shape=1):
@@ -217,6 +220,7 @@ def Resample_X_Q(
 
 
 ### GIBBS SAMPLER
+
 
 def Gibbs_Quantile(
     T: int,
