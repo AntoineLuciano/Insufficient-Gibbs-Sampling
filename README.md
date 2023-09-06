@@ -10,11 +10,22 @@ We propose here three main functions named `Gibbs_med_MAD`, `Gibbs_med_IQR` and 
 
 ## Install
 
-Install via clone the repository and install via pip
+## Install
+
+Install latest release via `pip`
 
 ```shell
-git clone https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling
+pip install RobustGibbs
 ```
+
+For latest development version clone the repository and install via pip
+
+```shell
+git clone https://github.com/antoineluciano/Insufficient-Gibbs-Sampling
+cd RobustGibbs
+pip install .
+```
+
 ## Available models/likelihood
 * Normal distribution (`distribution="normal"`)
 * Cauchy distribution (`distribution="cauchy"`)
