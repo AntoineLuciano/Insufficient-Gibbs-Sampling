@@ -9,7 +9,7 @@ from RobustGibbs.postertior_sample import posterior
 ### INITIALISATION
 
 
-def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
+def Quantile_Init(Q, P, N, distribution, epsilon=0.001,reparametrization=True):
     loc, scale, shape = 0, 1, 1
     if distribution == "normal":
         loc = Q[len(Q) // 2]
@@ -19,7 +19,6 @@ def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
         loc = Q[len(Q) // 2]
         scale = (Q[-1] - Q[0]) / (cauchy(loc).ppf(P[-1]) - cauchy(loc).ppf(P[0]))
         par_names = ["loc", "scale"]
-
     if distribution == "translated_weibull" or distribution == "weibull":
         if distribution == "weibull":
             loc = 0
@@ -34,6 +33,30 @@ def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
             weibull_min(shape, loc=loc).ppf(P[-1])
             - weibull_min(shape, loc=loc).ppf(P[0])
         )
+    if distribution == "translated_lognormal" or distribution == "lognormal":
+        if distribution == "lognormal":
+            loc = 0
+            par_names = ["scale", "shape"]
+        else:
+            loc = 2 * Q[0] - Q[1]
+            par_names = ["loc", "scale", "shape"]
+        shape = 1.5
+        scale = (Q[-1] - Q[0]) / (
+            lognorm(s=shape, scale=np.exp(loc)).ppf(P[-1])
+            - lognorm(s=shape, scale=np.exp(loc)).ppf(P[0])
+        )
+        if reparametrization: scale,shape = np.exp(scale+shape/2),(np.exp(shape**2)-1)*np.exp(2*scale+shape**2)
+    if distribution == "generalized_pareto":
+        loc = 0
+        par_names = ["scale", "shape"]
+        shape = 1/10
+        scale = (Q[-1] - Q[0]) / (
+            genpareto(c=shape,loc=loc,scale=scale).ppf(P[-1])
+            - genpareto(c=shape,loc=loc,scale=scale).ppf(P[0])
+        )
+        if reparametrization: 
+            scale,shape = loc + scale/(1-shape),scale**2/((1-shape)**2*(1-2*shape))
+        
 
     init_theta = [loc, scale, shape]
     H = np.array(P) * (N - 1) + 1
@@ -77,9 +100,8 @@ def Quantile_Init(Q, P, N, distribution, epsilon=0.001):
 
 ### RESAMPLING
 
-
-def OrderStats_MH(Q_val, Q_sim, Q_tot, N, theta, K, I, G, distribution, std_prop):
-    def log_density(X, I, loc, scale, distribution, shape=1):
+def OrderStats_MH(Q_val, Q_sim, Q_tot, N, theta, K, I, G, distribution, std_prop,reparametrization=True):
+    def log_density(X, I, loc, scale, distribution, shape=1,reparametrization = True):
         if distribution == "normal":
             f, F = norm(loc, scale).pdf, norm(loc, scale).cdf
         elif distribution == "cauchy":
@@ -89,6 +111,15 @@ def OrderStats_MH(Q_val, Q_sim, Q_tot, N, theta, K, I, G, distribution, std_prop
                 weibull_min(shape, loc=loc, scale=scale).pdf,
                 weibull_min(shape, loc=loc, scale=scale).cdf,
             )
+        elif distribution == "translated_lognormal" or distribution == "lognormal":
+            if reparametrization: scale,shape = np.log((scale-loc)**2/np.sqrt((scale-loc)**2+shape)),np.sqrt(np.log(1+shape/(scale-loc)**2))
+            f, F = (
+                lognorm(s=shape, scale=np.exp(scale),loc=loc).pdf,
+                lognorm(s=shape, scale=np.exp(scale),loc=loc).cdf,
+            )
+        elif distribution == "generalized_pareto":
+            if reparametrization: scale,shape = (scale-loc)/2+(scale-loc)**3/(2*shape),1/2-(scale-loc)**2/(2*shape)
+            f, F = genpareto(loc=loc, scale=scale, c=shape).pdf, genpareto(loc=loc, scale=scale, c=shape).cdf
 
         return (
             np.log(F([X[1]]) - F(X[0])) * (I[1] - I[0] - 1)
@@ -108,7 +139,15 @@ def OrderStats_MH(Q_val, Q_sim, Q_tot, N, theta, K, I, G, distribution, std_prop
             weibull_min(shape, loc=loc, scale=scale).pdf,
             weibull_min(shape, loc=loc, scale=scale).ppf,
         )
-
+    elif distribution=="generalized_pareto":
+        if reparametrization: scale,shape = (scale-loc)/2+(scale-loc)**3/(2*shape),1/2-(scale-loc)**2/(2*shape)
+        f, Q = genpareto(loc=loc, scale=scale, c=shape).pdf, genpareto(loc=loc, scale=scale, c=shape).ppf
+    elif distribution == "translated_lognormal" or distribution == "lognormal":
+        if reparametrization: scale,shape = np.log((scale-loc)**2/np.sqrt((scale-loc)**2+shape)),np.sqrt(np.log(1+shape/(scale-loc)**2))
+        f, Q = (
+            lognorm(s=shape, scale=np.exp(scale),loc=loc).pdf,
+            lognorm(s=shape, scale=np.exp(scale),loc=loc).ppf,
+        )
     I_sim = np.array(I[np.where(G > 0)])
     p = I_sim / (N + 1)
     Var_K = p * (1 - p) / ((N + 2) * f(Q(p)) ** 2)

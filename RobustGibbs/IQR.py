@@ -174,8 +174,8 @@ def X_m_IQR(med, IQR, Q_sim, Q_tot, N, theta, K, G, I, distribution, std_prop):
     a, b = np.repeat(X1, K1), np.repeat(X2, K1)
     
     sample = truncated(
-        a=(a - loc) / scale,
-        b=(b - loc) / scale,
+        a=a,
+        b=b,
         loc=np.repeat(loc, len(a)),
         scale=np.repeat(scale, len(a)),
         size=len(a),

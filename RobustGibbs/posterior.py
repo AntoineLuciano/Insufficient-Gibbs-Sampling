@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.stats import cauchy, norm, gamma, weibull_min, gamma
+from scipy.stats import cauchy, norm, gamma, weibull_min, gamma,lognorm,genpareto
 
 
 def posterior(
@@ -51,6 +51,13 @@ def posterior(
 
     def llike_weibull(x, loc, scale, shape):
         return np.sum(np.log(weibull_min.pdf(x, c=shape, scale=scale, loc=loc)))
+    def llike_lognormal(x,loc,scale,shape,reparametrization=True):
+        if reparametrization: scale,shape = np.log((scale-loc)**2/np.sqrt((scale-loc)**2+shape)),np.sqrt(np.log(1+shape/(scale-loc)**2))
+        return np.sum(np.log(lognorm.pdf(x,loc=loc,s=shape,scale=np.exp(scale))))
+    def llike_genpareto(x,loc,scale,shape,reparametrization=True):
+        if reparametrization: scale,shape = (scale-loc)/2+(scale-loc)**3/(2*shape),1/2-(scale-loc)**2/(2*shape)
+        return np.sum(np.log(genpareto.pdf(x,c=shape,scale=scale,loc=loc)))
+
     
     loc, scale, shape = theta
     if distribution == "normal":
@@ -61,6 +68,11 @@ def posterior(
         llike = llike_weibull
     elif distribution == "translated_weibull":
         llike = llike_weibull
+    elif distribution == "lognormal" or distribution=="translated_lognormal":
+        llike = llike_lognormal
+    elif distribution == "generalized_pareto":
+        llike = llike_genpareto
+        
     else:
         raise Exception("ERROR : Distribution {} not valid !".format(distribution))
 

@@ -1,7 +1,7 @@
 # Insufficient-Gibbs-Sampling
 
 
-`RobustGibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the paper figures can be located in the `figures` folder.
+`InsufficientGibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the paper figures can be located in the `figures` folder.
 
 ## Robust Gibbs package
 
@@ -12,14 +12,14 @@ We propose here three main functions named `Gibbs_med_MAD`, `Gibbs_med_IQR` and 
 Install latest release via `pip`
 
 ```shell
-pip install RobustGibbs
+pip install InsufficientGibbs
 ```
 
 For latest development version clone the repository and install via pip
 
 ```shell
 git clone https://github.com/antoineluciano/Insufficient-Gibbs-Sampling
-cd RobustGibbs
+cd InsufficientGibbs
 pip install .
 ```
 

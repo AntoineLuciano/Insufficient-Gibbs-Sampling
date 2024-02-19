@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.stats import median_abs_deviation, norm, cauchy, weibull_min
+from scipy.stats import median_abs_deviation, norm, cauchy, weibull_min, lognorm, genpareto
 from tqdm import tqdm
 
 
 from RobustGibbs.truncated import *
-from RobustGibbs.postertior_sample import posterior
+from RobustGibbs.posterior import posterior
 
 
 def medMAD(X):
@@ -239,8 +239,8 @@ def resampling_even(
 
         a, b = med - s3, med + s3
         xnew1 = truncated(
-            a=(a - loc) / scale,
-            b=(b - loc) / scale,
+            a=a,
+            b=b,
             size=1,
             loc=loc,
             scale=scale,
@@ -260,8 +260,8 @@ def resampling_even(
             if a >= b:
                 raise Exception("ERROR in med,MAD perturbation (case 2b) !")
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -277,8 +277,8 @@ def resampling_even(
                 raise Exception("ERROR in med,MAD perturbation (case 2a) !")
 
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -320,8 +320,8 @@ def resampling_even(
             case = "4a"
             a, b = med, med + MAD1
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -337,8 +337,8 @@ def resampling_even(
             case = "4b"
             a, b = med - MAD1, med
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -354,8 +354,8 @@ def resampling_even(
             case = "4c"
             a, b = zone_even_ab(xother, med1, med2, MAD1, MAD2)
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -376,8 +376,8 @@ def resampling_even(
             case = "5b "
             a, b = zone_even_ab(xother, med1, med2, MAD1, MAD2)
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -391,8 +391,8 @@ def resampling_even(
             case = "5a"
             a, b = zone_even_E_ab(xother, med1, med2, MAD1, MAD2)
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -429,8 +429,8 @@ def resampling_even(
             case = "5d "
             a, b = zone_even_E_ab(xother, med1, med2, MAD1, MAD2)
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -459,8 +459,8 @@ def resampling_even(
             else:
                 a, b = med2, np.inf
             xnew1 = truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -475,8 +475,8 @@ def resampling_even(
                 change_MAD = True
             elif xnew1 < med - MAD2:
                 xnew2 = truncated(
-                    a=(med - MAD1 - loc) / scale,
-                    b=(med1 - loc) / scale,
+                    a=med - MAD1,
+                    b=med1,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -485,8 +485,8 @@ def resampling_even(
                 )[0]
             elif xnew1 > med + MAD2:
                 xnew2 = truncated(
-                    a=(med2 - loc) / scale,
-                    b=(med + MAD1 - loc) / scale,
+                    a=med2,
+                    b=med,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -496,7 +496,7 @@ def resampling_even(
             elif med1 > xnew1 > med - MAD1:
                 xnew2 = truncated(
                     a=-np.inf,
-                    b=(med - MAD2 - loc) / scale,
+                    b=med - MAD2,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -505,7 +505,7 @@ def resampling_even(
                 )[0]
             else:
                 xnew2 = truncated(
-                    a=(med + MAD2 - loc) / scale,
+                    a=med + MAD2,
                     b=np.inf,
                     size=1,
                     loc=loc,
@@ -516,8 +516,8 @@ def resampling_even(
         elif sort_zone == [2, 3]:
             case = "6b "
             xnew1 = truncated(
-                a=(med - MAD1 - loc) / scale,
-                b=(med + MAD1 - loc) / scale,
+                a=med - MAD1,
+                b=med + MAD1,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -529,8 +529,8 @@ def resampling_even(
                 change_med = True
             elif xnew1 < med1:
                 xnew2 = truncated(
-                    a=(med2 - loc) / scale,
-                    b=(med + MAD1 - loc) / scale,
+                    a=med2,
+                    b=med + MAD1,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -539,8 +539,8 @@ def resampling_even(
                 )[0]
             else:
                 xnew2 = truncated(
-                    a=(med - MAD1 - loc) / scale,
-                    b=(med1 - loc) / scale,
+                    a=med - MAD1,
+                    b=med1,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -562,8 +562,8 @@ def resampling_even(
             else:
                 a, b = zone_even_C_ab(xnew1, med1, med2, MAD1, MAD2)
                 xnew2 = truncated(
-                    a=(a - loc) / scale,
-                    b=(b - loc) / scale,
+                    a=a,
+                    b=b,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -574,8 +574,8 @@ def resampling_even(
             case = "6d"
             a1, b1 = zone_even_ab(xi, med1, med2, MAD1, MAD2)
             xnew1 = truncated(
-                a=(a1 - loc) / scale,
-                b=(b1 - loc) / scale,
+                a=a1,
+                b=b1,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -584,8 +584,8 @@ def resampling_even(
             )[0]
             a2, b2 = zone_even_ab(xj, med1, med2, MAD1, MAD2)
             xnew2 = truncated(
-                a=(a2 - loc) / scale,
-                b=(b2 - loc) / scale,
+                a=a2,
+                b=b2,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -715,8 +715,8 @@ def resampling_odd(
         a, b = zone_odd_ab(xother, med, MAD)
         xnew1, xnew2 = (
             truncated(
-                a=(a - loc) / scale,
-                b=(b - loc) / scale,
+                a=a,
+                b=b,
                 size=1,
                 loc=loc,
                 scale=scale,
@@ -737,8 +737,8 @@ def resampling_odd(
             a, b = zone_odd_ab(xother, med, MAD)
             xnew1, xnew2 = (
                 truncated(
-                    a=(a - loc) / scale,
-                    b=(b - loc) / scale,
+                    a=a,
+                    b=b,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -765,8 +765,8 @@ def resampling_odd(
                 # case = "3c : {} devient {} dans R et {} devient {} dans [{},{}]".format(round(xi,3),round(xnew1,3),round(xj,3),round(xnew2,3),a,b)
                 a, b = med - MAD, med + MAD
                 xnew1 = truncated(
-                    a=(a - loc) / scale,
-                    b=(b - loc) / scale,
+                    a=a,
+                    b=b,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -787,18 +787,25 @@ def resampling_odd(
                 [2, 4],
             ]:
                 case = "4a"
-                if distribution == "normal":
-                    xnew1 = norm(loc=loc, scale=scale).rvs(1)[0]
-                elif distribution == "cauchy":
-                    xnew1 = cauchy(loc=loc, scale=scale).rvs(1)[0]
-                elif distribution == "weibull":
-                    xnew1 = weibull_min(c=shape, scale=scale, loc=loc).rvs(1)[0]
-                elif distribution == "translated_weibull":
-                    xnew1 = weibull_min(c=shape, scale=scale).rvs(1)[0]
+                
+                xnew1 = truncated(loc=loc, scale =scale, shape = shape, distribution = distribution, a = -np.inf, b = np.inf)[0]
+                # if distribution == "normal":
+                #     xnew1 = norm(loc=loc, scale=scale).rvs(1)[0]
+                # elif distribution == "cauchy":
+                #     xnew1 = cauchy(loc=loc, scale=scale).rvs(1)[0]
+                # elif distribution == "weibull":
+                #     xnew1 = weibull_min(c=shape, scale=scale, loc=loc).rvs(1)[0]
+                # elif distribution == "translated_weibull":
+                #     xnew1 = weibull_min(c=shape, scale=scale).rvs(1)[0]
+                # elif distribution == "lognormal" or distribution == "translated_lognormal":
+                #     xnew1 = lognorm(loc = loc, c=shape, scale=scale).rvs(1)[0]
+                # elif distribution == "generalized_pareto":
+                #     xnew1 = genpareto(c=shape, scale=scale, loc=loc).rvs(1)[0]
+                    
                 a, b = zone_odd_C_ab(xnew1, med, MAD)
                 xnew2 = truncated(
-                    a=(a - loc) / scale,
-                    b=(b - loc) / scale,
+                    a=a,
+                    b=b,
                     size=1,
                     loc=loc,
                     scale=scale,
@@ -811,8 +818,8 @@ def resampling_odd(
                 a2, b2 = zone_odd_ab(xj, med, MAD)
                 xnew1, xnew2 = (
                     truncated(
-                        a=(a1 - loc) / scale,
-                        b=(b1 - loc) / scale,
+                        a=a1,
+                        b=b1,
                         size=1,
                         loc=loc,
                         scale=scale,
@@ -820,8 +827,8 @@ def resampling_odd(
                         shape=shape,
                     )[0],
                     truncated(
-                        a=(a2 - loc) / scale,
-                        b=(b2 - loc) / scale,
+                        a=a2,
+                        b=b2,
                         size=1,
                         loc=loc,
                         scale=scale,
