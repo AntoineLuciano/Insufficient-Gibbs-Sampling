@@ -9,4 +9,5 @@ src/InsufficientGibbs.egg-info/PKG-INFO
 src/InsufficientGibbs.egg-info/SOURCES.txt
 src/InsufficientGibbs.egg-info/dependency_links.txt
 src/InsufficientGibbs.egg-info/top_level.txt
+tests/test_cluster.py
 tests/tests.py

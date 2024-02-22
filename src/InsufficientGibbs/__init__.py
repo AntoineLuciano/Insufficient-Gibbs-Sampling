@@ -1,4 +1,3 @@
-from InsufficientGibbs.Distribution import Normal, Cauchy, Weibull, LogNormal, TranslatedLogNormal, TranslatedWeibull, GeneralizedPareto, Pareto, ReparametrizedTranslatedLogNormal,ReparametrizedTranslatedLogNormal
-
-from InsufficientGibbs.Model import NormalModel, CauchyModel, WeibullModel, LogNormalModel, TranslatedLogNormalModel, TranslatedWeibullModel, GeneralizedParetoModel
+from InsufficientGibbs.Distribution import *
+from InsufficientGibbs.Model import *
 #ReparametrizedTranslatedLogNormalModel, ReparametrizedTranslatedLogNormalModel

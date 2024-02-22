@@ -3,7 +3,7 @@ from typing import Dict, Tuple
 from tqdm import tqdm
 import numpy as np
 from scipy.stats import norm, cauchy, lognorm, weibull_min,gamma,genpareto,median_abs_deviation,laplace, invgamma, iqr
-from Distribution import *
+from InsufficientGibbs.Distribution import *
 
 
 def medMAD(X): return (np.median(X), median_abs_deviation(X))  

@@ -1,9 +1,9 @@
-# Insufficient-Gibbs-Sampling
+# Insufficient Gibbs Sampling
 
 
-`InsufficientGibbs` is a package that enables users to sample from the posterior parameters when only certain robust statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the paper figures can be located in the `figures` folder.
+`InsufficientGibbs` is a package that enables users to sample from the posterior parameters when only robust and insufficient statistics of the data are accessible. The paper that comprehensively describes the theory behind these methods can be found on arXiv (https://arxiv.org/abs/2307.14973). Additionally, the code responsible for generating all the paper figures can be located in the `Figures` folder.
 
-## Robust Gibbs package
+## `InsufficientGibbs` package
 
 We propose here three main functions named `Gibbs_med_MAD`, `Gibbs_med_IQR` and `Gibbs_Quantile` to cover the case when we observe the pairs (median, MAD) or (median, IQR) or a sequence of quantiles. 
 
@@ -19,24 +19,28 @@ For latest development version clone the repository and install via pip
 
 ```shell
 git clone https://github.com/antoineluciano/Insufficient-Gibbs-Sampling
-cd InsufficientGibbs
+cd src\InsufficientGibbs
 pip install .
 ```
 
-## Available models/likelihood
-* Normal distribution (`distribution="normal"`)
-* Cauchy distribution (`distribution="cauchy"`)
-* Weibull distribution (`distribution="weibull"`)
-* Translated distribution (`distribution="translated_weibull"`)
+## Available distributions
+* Normal (`Normal`)
+* Cauchy (`Cauchy`)
+* Laplace(`Laplace`)
+* Gamma (`Gamma`) and its translated version (`TranslatedGamma`)
+* LogNormal (`LogNormal`) and its translated version (`TranslatedLogNormal`)
+* Weibull (`Weibull`) and its translated version (`TranslatedWeibull`)
+* Generalized Pareto (`GeneralizedPareto`)
 
-## Available location priors
-* Normal (`par_loc="normal"`)
-* Cauchy (`par_loc="cauchy"`)
-* Gamma (`par_loc="gamma"`)
-## Available scale priors
-* Gamma (`par_loc="gamma"`)
-* Jeffreys (`par_loc="jeffreys"`)
-## Available shape priors
-* Gamma (`par_loc="gamma"`)
+Ajoute `Model` to the end of their function names to use them as models.
 
+# Tutorial
+
+## Create prior distributions
+
+## Create the model
+
+## Sample from the posterior of 
+
+# How to add new distributions and models
 

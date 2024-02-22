@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: InsufficientGibbs
-Version: 1.0.2
+Version: 1.0.5
 Summary: Package for performing Bayesian inference with insufficient and robust statistics
 Author-email: Antoine Luciano <antoine.luciano@dauphine.eu>
 Project-URL: Homepage, https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling
