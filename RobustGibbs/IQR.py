@@ -155,7 +155,7 @@ def IQR_init(N, med, IQR, distribution,epsilon=0):
         Q_sim = [Q_tot[0], Q_tot[2], Q_tot[4], Q_tot[5]]
 
     K = np.array(K)
-    return X_0, init_theta,par_names, Q_sim, Q_tot, K, G, I
+    return X_0,par_names, Q_sim, Q_tot, K, G, I
 
 # RESAMPLING 
 

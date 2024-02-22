@@ -1,16 +1,16 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "InsuficientGibbs"
-version = "1.0.0"
+name = "InsufficientGibbs"
+version = "1.0.2"
+description = "Package for performing Bayesian inference with insufficient and robust statistics"
 authors = [
   { name="Antoine Luciano", email="antoine.luciano@dauphine.eu" },
 ]
-description = "Insufficient Gibbs Sampling"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.7"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",

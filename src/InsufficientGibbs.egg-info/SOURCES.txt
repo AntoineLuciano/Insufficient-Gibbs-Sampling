@@ -1,0 +1,12 @@
+LICENSE.txt
+README.md
+pyproject.toml
+src/InsufficientGibbs/Distribution.py
+src/InsufficientGibbs/Model.py
+src/InsufficientGibbs/Variable.py
+src/InsufficientGibbs/__init__.py
+src/InsufficientGibbs.egg-info/PKG-INFO
+src/InsufficientGibbs.egg-info/SOURCES.txt
+src/InsufficientGibbs.egg-info/dependency_links.txt
+src/InsufficientGibbs.egg-info/top_level.txt
+tests/tests.py
