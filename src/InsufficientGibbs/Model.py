@@ -23,9 +23,15 @@ class Model:
     """
     
     def __init__(self,parameters_dict: Dict[str, Distribution]) -> None:
+        
         self.parameters_dict = self._check_dict(parameters_dict)
         self.par_X = []    
         self.distrib_name="" 
+        self.par_names = list(self.parameters_dict.keys())
+        self.init_method = "naive"
+
+        
+    
 
     def _check_dict(self, parameters_dict:Dict[str, Distribution]) -> Dict[str, Distribution]:
         for key, value in self.parameters_dict.items():
@@ -59,14 +65,14 @@ class Model:
             sigma2 = invgamma(a = A, scale = B).rvs(1)[0]
             mu = norm(loc = M, scale = np.sqrt(sigma2/C)).rvs(1)[0]
             
-            return {'loc': mu, 'scale': np.sqrt(sigma2)}
+            return {self.loc.name: mu, self.scale.name: np.sqrt(sigma2)}
         
         
         current_theta = self.parameters_value
         if self.distrib_name == 'normal': 
-            if self.parameters_dict["loc"].distrib_name =="normal" and self.parameters_dict["scale"].distrib_name == "inverse_gamma":
-                mu_0, sigma_0 = self.parameters_dict["loc"].loc.value, self.parameters_dict["scale"].scale.value
-                alpha,beta = self.parameters_dict["scale"].shape.value,self.parameters_dict["scale"].scale.value
+            if self.parameters_dict[self.loc.name].distrib_name =="normal" and self.parameters_dict[self.scale.name].distrib_name == "inverse_gamma":
+                mu_0, sigma_0 = self.parameters_dict[self.loc.name].loc.value, self.parameters_dict[self.scale.name].scale.value
+                alpha,beta = self.parameters_dict[self.scale.name].shape.value,self.parameters_dict[self.scale.name].scale.value
                 current_theta = posterior_NIG(X,mu_0,1/sigma_0,alpha,beta)
                 self._distribution= self.type_distribution(theta=list(current_theta.values()))
                 return current_theta
@@ -164,6 +170,14 @@ class Model:
         X_0 = np.round(np.append(X_trunc, X_order).reshape(-1), 8)
         return X_0, Q, Q_tot, Q_sim, I, I_sim, G
     
+    def Quantile_Init(self,  Q, P, N, theta_0 = {}, epsilon=0.001):
+        if theta_0.keys()!= self.par_names:
+            theta_0 = self.Init_theta_Quantile(Q, P, N, theta_0)
+        self.parameters_value = theta_0
+        self._distribution= self.type_distribution(theta=list(self.parameters_value.values()))
+        return self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
+
+    
     def OrderStats_Quantile_MH(self, q_j, Q_tot, I, G, N, std_prop):
         f,Q = self._distribution.pdf,self._distribution.ppf
         I_sim = []
@@ -227,7 +241,7 @@ class Model:
         return X_0, Q_tot, Q_sim
 
     
-    def Gibbs_Quantile(self,T: int,N: int,Q: list,P: list, std_prop_dict: dict = {}, std_prop_quantile=0.1, List_X=False, epsilon=0.001, verbose=True):
+    def Gibbs_Quantile(self,T: int,N: int,Q: list,P: list, theta_0 : dict = {}, std_prop_dict: dict = {}, std_prop_quantile: float =0.1, List_X: bool = False,  epsilon : float =0.001, verbose : bool =True):
                         
         """
         Gibbs sampler to sample from the posterior of model parameters given a sequence of quantiles.
@@ -237,11 +251,12 @@ class Model:
             N (int): Size of the vector X.
             Q (list): Observed quantile value.
             P (float): Probability associated to the observed quantiles Q.
-            std_prop_dict (dict): Dictionary of standard deviations for the proposal distribution of each parameter.
-            std_prop_quantile (float): Standard deviation for the proposal distribution of the order statistics.
-            List_X (bool): If True, the latent vectors X are stored at each iteration and returned.
-            epsilon (float): The distance between the initialized order statistics and the observed quantiles.
-            verbose (bool): If True, print the acceptance rate of the order statistics and the acceptance rate of the parameters.
+            theta_0 (dict): Initial value of the parameters. Default set to {}. 
+            std_prop_dict (dict): Dictionary of standard deviations for the proposal distribution of each parameter. Default set to 0.1 for each parmeters. 
+            std_prop_quantile (float): Standard deviation for the proposal distribution of the order statistics. Default set to 0.1.
+            List_X (bool): If True, the latent vectors X are stored at each iteration and returned. Default set to False.
+            epsilon (float): The distance between the initialized order statistics and the observed quantiles. Default set to 0.001.
+            verbose (bool): If True, print the acceptance rate of the order statistics and the acceptance rate of the parameters. Default set to True.
             
             
         Returns:
@@ -253,32 +268,24 @@ class Model:
                  ... input parameters
         """
                  
-                 
-        par_names = list(self.parameters_dict.keys())
+                         
         if std_prop_dict == {}:
-            std_prop_dict = {param_name: 0.1 for param_name in par_names}
-        X, q, q_tot, q_sim, I, I_sim, G = self.Quantile_Init(
-            Q, P, N, epsilon=epsilon)
-        Chains = {par_name: [] for par_name in par_names}
+            std_prop_dict = {param_name: 0.1 for param_name in self.par_names}
+        X, q, q_tot, q_sim, I, I_sim, G = self.Quantile_Init(Q, P, N, theta_0, epsilon=epsilon)
         
+        theta_0 = self.parameters_value
+        Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         X_list = [X]
         Q_Tot = [q_tot]
         Q_Sim = [q_sim]
+        
         for i in tqdm(range(T), disable=not (verbose)):
-            X,q_tot,q_sim = self.Resample_X_Quantile(
-            q,
-            q_tot,
-            q_sim,
-            I,
-            G,
-            N,
-            std_prop_quantile,
-        )
             
+            X,q_tot,q_sim = self.Resample_X_Quantile(q,q_tot,q_sim,I,G,N,std_prop_quantile)
 
             theta = self.posterior(X,std_prop_dict)
 
-            for par_name in par_names:
+            for par_name in self.par_names:
                 Chains[par_name].append(theta[par_name])
 
             Q_Tot.append(list(q_tot))
@@ -287,6 +294,7 @@ class Model:
                 X_list.append(X)
         if not (List_X):
             X_list.append(X)
+            
         if verbose:
             Q = np.array(Q_Sim).T
             for i in range(Q.shape[0]):
@@ -296,13 +304,12 @@ class Model:
                         int(I_sim[i]), (len(np.unique(Q[i])) - 1) / Q.shape[1]
                     )
                 )
-        if verbose :
             acceptation_rate = [
-                (len(np.unique(Chains[par_name])) - 1) / T for par_name in par_names
+                (len(np.unique(Chains[par_name])) - 1) / T for par_name in self.par_names
             ]
             print("Acceptation rates MH :", end=" ")
-            for i in range(len(par_names)):
-                print("{} = {:.2%}".format(par_names[i], acceptation_rate[i]), end=" ")
+            for i in range(len(self.par_names)):
+                print("{} = {:.2%}".format(self.par_names[i], acceptation_rate[i]), end=" ")
             print()
             
         Q_Tot = np.array([np.hstack(q_tot).reshape(-1) for q_tot in Q_Tot])
@@ -357,6 +364,22 @@ class Model:
         m_Z, s_Z = medMAD(Z)
         X_0 = np.round((Z - m_Z) / s_Z * MAD + med, 8)
         return X_0
+    
+    def Init_X_med_MAD(self, N, med, MAD, method):
+        if method == "naive":
+            return self.Init_X_med_MAD_naive(N, med, MAD)
+        elif method == "loc_scale_stable":
+            return self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
+        else:
+            raise ValueError("Invalid initialization method: {} Please specify the initialization in the model instance!".format(method))
+        
+    
+    def med_MAD_Init(self,N, med, MAD, theta_0, epsilon):
+        if theta_0.keys()!= self.par_names:
+            theta_0 = self.med_IQR_Init(med,MAD)
+        self.parameters_value = theta_0
+        self._distribution= self.type_distribution(theta=list(self.parameters_value.values()))
+        return self.Init_X_med_MAD(N, med, MAD, self.init_method)
     
     def zone_even(self,xi, X, med=None, MAD=None):
         X = np.array(X)
@@ -875,7 +898,7 @@ class Model:
         return self.Resample_X_med_MAD_odd(X,med,MAD)
         
     
-    def Gibbs_med_MAD(self,T: int,N: int,med: float,MAD: float, std_prop_dict: dict = {}, List_X=False, verbose=True, True_X=[]):
+    def Gibbs_med_MAD(self,T: int,N: int,med: float,MAD: float, theta_0: dict = {}, std_prop_dict: dict = {}, List_X=False, verbose=True, True_X=[]):
         
         """
         Gibbs sampler to sample from the posterior of model parameters given the median and the MAD.
@@ -885,6 +908,7 @@ class Model:
             N (int): Size of the vector X.
             med (float): Observed median.
             MAD (float): Observed MAD.
+            theta_0 (dict): Dictionary of initial values for the parameters.
             std_prop_dict (dict): Dictionary of standard deviations for the proposal distribution of each parameter.
             List_X (bool): If True, the latent vectors X are stored at each iteration and returned.
             verbose (bool): If True, print the acceptance rate of the order statistics and the acceptance rate of the parameters.
@@ -896,12 +920,14 @@ class Model:
                  ... input parameters
         
         """
-        par_names = list(self.parameters_dict.keys())
+        
         if std_prop_dict == {}:
-            std_prop_dict = {param_name: 0.1 for param_name in par_names}
+            std_prop_dict = {param_name: 0.1 for param_name in self.par_names}
+        
         X = self.med_MAD_Init(med,MAD,N)
 
-        Chains = {par_name: [] for par_name in par_names}
+        theta_0 = self.parameters_value
+        Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         
         X_list = [X]
                 
@@ -909,7 +935,7 @@ class Model:
             if True_X==[]: X = self.Resample_X_med_MAD(X,med,MAD)
             else: X=True_X
             theta = self.posterior(X,std_prop_dict)
-            for par_name in par_names:
+            for par_name in self.par_names:
                 Chains[par_name].append(theta[par_name])
                 
             if List_X: X_list.append(X)
@@ -919,11 +945,11 @@ class Model:
       
         if verbose :
             acceptation_rate = [
-                (len(np.unique(Chains[par_name])) - 1) / T for par_name in par_names
+                (len(np.unique(Chains[par_name])) - 1) / T for par_name in self.par_names
             ]
             print("Acceptation rates MH :", end=" ")
-            for i in range(len(par_names)):
-                print("{} = {:.2%}".format(par_names[i], acceptation_rate[i]), end=" ")
+            for i in range(len(self.par_names)):
+                print("{} = {:.2%}".format(self.par_names[i], acceptation_rate[i]), end=" ")
             print()
         return {
             "X": X_list,
@@ -976,9 +1002,9 @@ class Model:
         X_0 = np.round((Z - m_Z) / i_Z * IQR + med, 8)
         return X_0
     
-    def Init_X_med_IQR(self,N,med,IQR,method="naive"):
+    def Init_X_med_IQR(self,N,med,IQR,epsilon,method="naive"):
         if method=="naive":
-            X_0 = self.Init_X_med_IQR_naive(N,med,IQR)
+            X_0 = self.Init_X_med_IQR_naive(N,med,IQR, epsilon)
         elif method=="stable":
             X_0 = self.Init_X_med_IQR_loc_scale_stable(N,med,IQR)
         else:
@@ -1013,6 +1039,14 @@ class Model:
         I_order = np.array(I_order)
         return X_0, Q_sim, Q_tot, I_order, G, I_sim
     
+    def med_IQR_Init(self, N, med, IQR, theta_0, epsilon):
+        if theta_0.keys()!= self.par_names:
+            theta_0 = self.Init_theta_med_IQR(med, IQR)
+        self.parameters_value = theta_0
+        self._distribution= self.type_distribution(theta=list(self.parameters_value.values()))
+        return self.Init_X_med_IQR(N, med, IQR, epsilon, self.init_method)
+    
+        
 
     def OrderStats_med_IQR_MH(self, med, IQR, Q_sim, Q_tot, N, I_order, G, I_sim, std_prop):
         
@@ -1078,7 +1112,7 @@ class Model:
         X_0 = np.round(np.append(X_trunc, X_order).reshape(-1), 8)
         return X_0, Q_sim, Q_tot
 
-    def Gibbs_med_IQR(self,T: int, N: int, med: float, IQR: float, std_prop_dict: dict = {}, std_prop_quantile=0.1,List_X=False, epsilon=0.001,verbose=True) -> dict:
+    def Gibbs_med_IQR(self,T: int, N: int, med: float, IQR: float, theta_0: dict = {}, std_prop_dict: dict = {}, std_prop_quantile=0.1,List_X=False, epsilon=0.001,verbose=True) -> dict:
         
         """Gibbs sampler for sampling from the posterior distribution of model parameters given the median and IQR of the data.
 
@@ -1087,6 +1121,7 @@ class Model:
             N (int): Size of the vector X. 
             med (float): Observed median.
             IQR (float): Observed IQR (Interquartile Range).
+            theta_0 (dict): Dictionary of initial values for the parameters.
             std_prop_dict (dict): Dictionary of standard deviations for the proposal distribution of each parameter.
             std_prop_quantile (float): Standard deviation for the proposal distribution of the order statistics.
             List_X (bool): If True, the latent vectors X are stored at each iteration and returned.
@@ -1104,13 +1139,13 @@ class Model:
             """ 
             
             
-        par_names = list(self.parameters_dict.keys())
         if std_prop_dict == {}:
-            std_prop_dict = {param_name: 0.1 for param_name in par_names}
-        
+            std_prop_dict = {param_name: 0.1 for param_name in self.par_names}
         
         X, q_sim, q_tot, I_order, G, I_sim = self.med_IQR_Init(med, IQR, N, epsilon=epsilon)
-        Chains = {par_name: [] for par_name in par_names}
+        
+        theta_0 = self.parameters_value
+        Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         
         X_list = [X]
         Q_Tot = [q_tot]
@@ -1120,7 +1155,7 @@ class Model:
             
             theta = self.posterior(X,std_prop_dict)
 
-            for par_name in par_names:
+            for par_name in self.par_names:
                 Chains[par_name].append(theta[par_name])
 
             Q_Tot.append(list(q_tot))
@@ -1140,11 +1175,11 @@ class Model:
                 )
         if verbose :
             acceptation_rate = [
-                (len(np.unique(Chains[par_name])) - 1) / T for par_name in par_names
+                (len(np.unique(Chains[par_name])) - 1) / T for par_name in self.par_names
             ]
             print("Acceptation rates MH :", end=" ")
-            for i in range(len(par_names)):
-                print("{} = {:.2%}".format(par_names[i], acceptation_rate[i]), end=" ")
+            for i in range(len(self.par_names)):
+                print("{} = {:.2%}".format(self.par_names[i], acceptation_rate[i]), end=" ")
             print()
             
         Q_Tot = np.array([np.hstack(q_tot).reshape(-1) for q_tot in Q_Tot])
@@ -1158,385 +1193,3 @@ class Model:
             "med": med,
             "IQR": IQR,
         }
-
-    
-    
-    
-    
-    
-
-    
-    
-### ------------------- CLASS OF MODELS ------------------- ###
-
-
-class NormalModel(Model):
-    def __init__(self, loc:Distribution, scale:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.type_distribution = Normal
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale}
-        super().__init__(self.parameters_dict)
-        self.distrib_name = "normal"
-
-    def domain(self) -> Tuple[float, float]:
-        return (float('-inf'), float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = Q[len(Q) // 2]
-        scale = (Q[-1] - Q[0]) / (norm(loc).ppf(P[-1]) - norm(loc).ppf(P[0]))
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Normal(loc=loc, scale=scale)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G 
-
-    def med_MAD_Init(self, med, MAD, N):
-        loc = med
-        scale = MAD*1.4826
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Normal(loc=loc, scale=scale)
-        X_0 = self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
-        return X_0
-    
-    def med_IQR_Init(self, med, IQR, N, epsilon=0.001):
-        loc = med
-        scale = IQR/(2*norm.ppf(3/4))
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Normal(loc=loc, scale=scale)
-        X_0, Q_sim, Q_tot, I_order, G, I_sim = self.Init_X_med_IQR(N, med, IQR,methode="stable",epsilon=epsilon)
-        return X_0, Q_sim, Q_tot, I_order, G, I_sim
-    
-    
-class NormalKnownScaleModel(Model):
-    def __init__(self, loc:Distribution) -> None:
-        self.loc = loc
-        self.type_distribution = Normal_known_scale
-        self.parameters_dict = {'loc': self.loc}
-        super().__init__(self.parameters_dict)
-        
-    def domain(self) -> Tuple[float, float]:
-        return (float('-inf'), float('inf'))
-    
-    def med_MAD_Init(self, med, MAD, N):
-        loc = med
-        self.parameters_value = {'loc': loc}
-        self._distribution = Normal_known_scale(loc=loc)
-        X_0 = self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
-        return X_0
-    
-    def med_IQR_Init(self, med, IQR, N, epsilon=0.001):
-        loc = med
-        self.parameters_value = {'loc': loc}
-        self._distribution = Normal_known_scale(loc=loc)
-        X_0, Q_sim, Q_tot, I_order, G, I_sim = self.Init_X_med_IQR(N, med, IQR,epsilon=epsilon)
-        return X_0, Q_sim, Q_tot, I_order, G, I_sim
-        
-class CauchyModel(Model):
-    
-    def __init__(self, loc:Distribution, scale:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.type_distribution = Cauchy
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale}
-        super().__init__(self.parameters_dict)
-
-    def domain(self) -> Tuple[float, float]:
-        return (float('-inf'), float('inf'))
-    
-    def med_MAD_Init(self, med, MAD, N):
-        loc = med
-        scale = MAD
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Normal(loc=loc, scale=scale)
-        X_0 = self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
-        return X_0
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = Q[len(Q) // 2]
-        scale = (Q[-1] - Q[0]) / (cauchy(loc).ppf(P[-1]) - cauchy(loc).ppf(P[0]))
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Cauchy(loc=loc, scale=scale)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G       
-    
-    def med_IQR_init(self, med, IQR, N, epsilon=0.001):
-        loc = med
-        scale = IQR/2
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Cauchy(loc=loc, scale=scale)
-        X_0, Q_sim, Q_tot, I_order, G, I_sim = self.Init_X_med_IQR(N, med, IQR,epsilon=epsilon)
-        return X_0, Q_sim, Q_tot, I_order, G, I_sim
-
-
-class GammaModel(Model):
-
-    def __init__(self, scale:Distribution, shape:Distribution) -> None:
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = Gamma 
-        self.parameters_dict = {'scale': self.scale, 'shape': self.shape}
-        super().__init__(self.parameters_dict)
-
-    def domain(self) -> Tuple[float, float]:
-        return (0, float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (
-            gamma(shape).ppf(P[-1])
-            - gamma(shape).ppf(P[0])
-        )
-        self.parameters_value = {'scale': scale, 'shape': shape}
-        self._distribution = Gamma(scale=scale, shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-
-class ReparametrizedGammaModel(Model):
-    
-    def __init__(self, mean:Distribution, std:Distribution) -> None:
-        self.mean = mean
-        self.std = std
-        self.type_distribution = ReparametrizedGamma 
-        self.parameters_dict = {'mean': self.mean, 'std': self.std}
-        super().__init__(self.parameters_dict)  
-    
-    def domain(self) -> Tuple[float, float]:
-        return (0, float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-
-        scale = (Q[len(Q) // 2])
-        shape = (Q[-1] - Q[0]) / (gamma(scale=scale, a=2).ppf(P[-1]) - gamma(scale=scale, a=2).ppf(P[0]))
-        mean = scale*shape
-        std = np.sqrt(scale**2*shape)
-        self.parameters_value = {'mean': mean, 'std': std}
-        self._distribution = ReparametrizedGamma(mean=mean,std=std)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-    
-
-class TranslatedGammaModel(Model):
-    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = TranslatedGamma 
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale, 'shape': self.shape}
-        super().__init__(self.parameters_dict)
-        
-    def domain(self) -> Tuple[float, float]:
-        return (self.parameters_value["loc"], float('inf'))
-
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = 2*Q[0]-Q[1]
-        scale = np.log(Q[len(Q) // 2])
-        shape = (Q[-1] - Q[0]) / (gamma(loc=loc,scale=scale).ppf(P[-1]) - gamma(loc=loc,scale=scale).ppf(P[0]))
-        self.parameters_value = {'loc': loc, 'scale': scale, 'shape': shape}
-        self._distribution = TranslatedGamma(loc=loc,scale=scale,shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-    
-
-class LogNormalModel(Model):
-
-    def __init__(self, scale:Distribution, shape:Distribution) -> None:
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = LogNormal 
-        self.parameters_dict = {'scale': self.scale, 'shape': self.shape}
-        self.parameters_value = {'scale': None, 'shape': None}
-        super().__init__(self.parameters_dict)
-
-    def domain(self) -> Tuple[float, float]:
-        return (0, float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        scale = np.log(Q[len(Q) // 2])
-        shape = (Q[-1] - Q[0]) / (lognorm(s=1, scale=np.exp(scale)).ppf(P[-1]) - lognorm(s=1, scale=np.exp(scale)).ppf(P[0]))
-        
-        self.parameters_value = {'scale': scale, 'shape': shape}
-        self._distribution = LogNormal(scale=scale, shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-    
-class ReparametrizedLogNormalModel(Model):
-    
-        def __init__(self, mean:Distribution, std:Distribution) -> None:
-            self.mean = mean
-            self.std = std
-            self.type_distribution = ReparametrizedLogNormal 
-            self.parameters_dict = {'mean': self.mean, 'std': self.std}
-            self.parameters_value = {'mean': None, 'std': None}
-            super().__init__(self.parameters_dict)
-            
-        def domain(self) -> Tuple[float, float]:
-            return (0, float('inf'))
-        
-        def Quantile_Init(self, Q, P, N, epsilon=0.001):
-            scale = np.log(Q[len(Q) // 2])
-            shape = (Q[-1] - Q[0]) / (lognorm(s=1, scale=np.exp(scale)).ppf(P[-1]) - lognorm(s=1, scale=np.exp(scale)).ppf(P[0]))
-            mean = np.exp(scale+shape**2/2)
-            std = np.sqrt((np.exp(shape**2)-1)*np.exp(2*scale+shape**2))
-            self.parameters_value = {'mean': mean, 'std': std}
-            self._distribution = ReparametrizedLogNormal(mean=mean,std=std)
-            X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-            return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-
-class TranslatedLogNormalModel(Model):
-    
-    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = TranslatedLogNormal 
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale, 'shape': self.shape}
-        self.parameters_value = {'loc': None, 'scale': None, 'shape': None}
-        super().__init__(self.parameters_dict)
-    
-    def domain(self) -> Tuple[float, float]:
-        return (self.parameters_value["loc"], float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = 2*Q[0]-Q[1]
-        scale = np.log(Q[len(Q) // 2])
-        shape = (Q[-1] - Q[0]) / (lognorm(loc=loc,scale=np.exp(scale), s=1).ppf(P[-1]) - lognorm(loc=loc,scale=np.exp(scale), s=1).ppf(P[0]))
-    
-        self.parameters_value = {'loc': loc, 'scale': scale, 'shape': shape}
-        print(self.parameters_value)
-        self._distribution = TranslatedLogNormal(loc=loc,scale=scale,shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-    
-
-    
-
-class WeibullModel(Model):
-
-    def __init__(self, scale:Distribution, shape:Distribution) -> None:
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = Weibull #to access corresponding distribution in fit
-        self.parameters_dict = {'scale': self.scale, 'shape': self.shape}
-        super().__init__(self.parameters_dict)
-
-    def domain(self) -> Tuple[float, float]:
-        return (0, float('inf'))
-
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (
-            weibull_min(shape).ppf(P[-1])
-            - weibull_min(shape).ppf(P[0])
-        )
-        self._distribution = TranslatedWeibull(scale=scale,shape=shape)
-        self.parameters_value = {'scale': scale, 'shape': shape}
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G 
-    
-class TranslatedWeibullModel(Model):
-    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = TranslatedWeibull 
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale, 'shape': self.shape}
-        super().__init__(self.parameters_dict)
-
-    def domain(self) -> Tuple[float, float]:
-        return (self.parameters_value["loc"], float('inf'))
-    
-    def Quantile_Init(self, Q, P, N,init_theta=[], epsilon=0.001):
-        loc = 2*Q[0]-Q[1]
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (
-            weibull_min(shape, loc=loc).ppf(P[-1])
-            - weibull_min(shape, loc=loc).ppf(P[0])
-        )
-        self.parameters_value = {'loc': loc, 'scale': scale, 'shape': shape}
-        self._distribution = TranslatedWeibull(loc=loc, scale=scale,shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G 
-    
-class GeneralizedParetoModel(Model):
-    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = GeneralizedPareto
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale, 'shape': self.shape}
-        super().__init__(self.parameters_dict)
-        
-    def domain(self) -> Tuple[float, float]:
-        return (self.parameters_value["loc"], float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = 2*Q[0]-Q[1]
-        shape = .1
-        scale = (Q[-1] - Q[0]) / (self.type_distribution(loc=loc, shape=shape)._distribution.ppf(P[-1]) -  self.type_distribution(loc=loc, shape=shape)._distribution.ppf(P[0]))
-        
-        self.parameters_value = {'loc': loc, 'scale': scale, 'shape': shape}
-        self._distribution = GeneralizedPareto(loc=loc, scale=scale,shape=shape)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-
-
-class LaplaceModel(Model):
-    def __init__(self, loc:Distribution, scale:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.type_distribution = Laplace
-        self.parameters_dict = {'loc': self.loc, 'scale': self.scale}
-        super().__init__(self.parameters_dict)
-    
-    def domain(self) -> Tuple[float, float]:
-        return (float('-inf'), float('inf'))
-    
-    def Quantile_Init(self, Q, P, N, epsilon=0.001):
-        loc = Q[len(Q) // 2]
-        scale = (Q[-1] - Q[0]) / (laplace(loc).ppf(P[-1]) - laplace(loc).ppf(P[0]))
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Laplace(loc=loc, scale=scale)
-        X_0, Q, Q_tot, Q_sim, I, I_sim, G = self.Init_X_Quantile(Q, P, N, epsilon=epsilon) 
-        return X_0, Q, Q_tot, Q_sim, I, I_sim, G
-    
-    def med_MAD_Init(self, med, MAD, N):
-        loc = med
-        scale = MAD/np.log(2)
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Laplace(loc=loc, scale=scale)
-        X_0 = self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
-        return X_0
-    
-    def med_IQR_Init(self, med, IQR, N, epsilon=0.001):
-        loc = med
-        scale = IQR/(2*np.log(2))
-        self.parameters_value = {'loc': loc, 'scale': scale}
-        self._distribution = Laplace(loc=loc, scale=scale)
-        X_0, Q_sim, Q_tot, I_order, G, I_sim = self.Init_X_med_IQR(N, med, IQR,epsilon=epsilon)
-        return X_0, Q_sim, Q_tot, I_order, G, I_sim
-
-class LaplaceKnownScaleModel(Model):
-    def __init__(self, loc:Distribution) -> None:
-        self.loc = loc
-        self.type_distribution = Laplace_known_scale
-        self.parameters_dict = {'loc': self.loc}
-        super().__init__(self.parameters_dict)
-    
-    def domain(self) -> Tuple[float, float]:
-        return (float('-inf'), float('inf'))
-    
-    def med_MAD_Init(self, med, MAD, N):
-        loc = med
-        self.parameters_value = {'loc': loc}
-        self._distribution = Laplace_known_scale(loc=loc)
-        X_0 = self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
-        return X_0
-    
-    def med_IQR_Init(self, med, IQR, N, epsilon=0.001):
-        loc = med
-        self.parameters_value = {'loc': loc}
-        self._distribution = Laplace_known_scale(loc=loc)
-        X_0, Q_sim, Q_tot, I_order, G, I_sim = self.Init_X_med_IQR(N, med, IQR,epsilon=epsilon)
-        return X_0, Q_sim, Q_tot, I_order, G, I_sim
-    
-    

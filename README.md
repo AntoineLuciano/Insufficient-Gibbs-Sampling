@@ -49,7 +49,40 @@ To sample from the posterior of the model parameters given the observed statisti
 * `Gibbs_med_IQR`: the observed data consists of the median and the interquartile range (IQR).
 * `Gibbs_med_MAD`: the observed data consists of the median and the median absolute deviation (MAD).
 
+## Examples
+
+### Cauchy distribution with Normal and Gamma priors
+
+```python 
+from InsufficientGibbs.Distribution import Normal, InverseGamma
+from InsufficientGibbs.Model import CauchyModel
+
+# Creating the prior distributions variables
+mu = Normal(0,10, name= "x_0")
+sigma = Gamma(2,2, name = "gamma")
+
+# Creating the model variable
+model = CauchyModel(mu,sigma)
+
+T, N = 10000, 100
+
+# Quantile case 
+q1, med, q3 = -1, 0, 1
+probs = [.25, .5, .75]
+Cauchy_Q = model.Gibbs_Quantiles(T, N, [q1, med, q3], probs)
+
+med, IQR = 0, 2
+Cauchy_med_IQR = model.Gibbs_med_IQR(T, N, med, IQR) 
+
+# Median, MAD case
+med, MAD = 0, 1
+Cauchy_med_MAD = model.Gibbs_med_MAD(T, N, med, MAD)
+```
+
+
 # How to add new distributions and models
 
 To make it possible to use this new method with models not implemented in the package, users can easily add their own models by simply adding an instance to the Distribution and Model classes.
+
+## Example of the Pareto Type II distribution
 

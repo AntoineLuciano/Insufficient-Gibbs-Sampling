@@ -8,9 +8,7 @@ import matplotlib.pyplot as plt
 
 class Distribution:
     """
-    Base class for all distribution
-    Key and values of `parameters_dict` needs the same order as the 
-    input to the distribution in stan.
+    Base class for all distributions
     """
     def __init__(self,
             parameters_dict: Dict[str, Variable],
@@ -184,7 +182,6 @@ class Gamma(Distribution):
         self._distribution = gamma(a=self.shape.value, scale=self.scale.value)
         self.distrib_name = "gamma"
         parameters_dict = {'scale':self.scale, 'shape':self.shape}
-        
         super().__init__(parameters_dict, self.name)
 
     def domain(self) -> Tuple[float, float]:
