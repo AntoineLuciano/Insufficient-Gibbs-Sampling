@@ -78,10 +78,8 @@ Cauchy_med_IQR = model.Gibbs_med_IQR(T, N, med, IQR)
 med, MAD = 0, 1
 Cauchy_med_MAD = model.Gibbs_med_MAD(T, N, med, MAD)
 ```
-You can display the chain by using the `display_chains` function: 
+You can display the chain by using the `display_chains` function.
 
-```python
-```
 
 # How to add new distributions and models
 
@@ -129,40 +127,7 @@ class Pareto(Distribution):
 Add the the instance `ParetoModel` of the class `Model` in the file `Models.py`:
 
 
-```python
-class ParetoType2Model(Model):
-    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
-        self.loc = loc
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = ParetoType2
-        self.parameters_dict = {loc.name: loc, scale.name: scale, shape.name: shape}
-        super().__init__(self.parameters_dict)
-        self.distrib_name = "pareto_type2"
-        self.init_method = "naive"
-        
-    def domain(self) -> Tuple[float, float]:
-        return (self.parameters_value["loc"], float('inf'))
-    
-    def Init_theta_Quantile(self, Q, P):
-        loc = 2*Q[0]-Q[1]
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[0]))
-        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
-    
-    def Init_theta_med_MAD(self, med, MAD):
-        loc = med-2*MAD
-        scale = 1
-        shape = 1.5
-        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
-    
-    def Init_theta_med_IQR(self, med, IQR):
-        loc = med-IQR
-        scale = 1
-        shape = 1.5
-        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
-    
-    
+```python    
 class ParetoModel:
     def __init__(self, scale:Distribution, shape:Distribution) -> None:
         self.scale = scale
@@ -193,7 +158,7 @@ class ParetoModel:
 
 ## Example of the Pareto Type II distribution
 
-First, define a class pareto2 that plays the same role as the functions in SciPy.
+First, define a class `pareto2` that plays the same role as the functions in SciPy.
 
 
 ```python 
@@ -220,7 +185,7 @@ class pareto2:
         return self.ppf(np.random.random(size))
 ```
 
-Then, add the instance ParetoType2 of the class Distribution using the above class pareto2 in the file Distribution.py:
+Then, add the instance `ParetoType2` of the class `Distribution` using the above class pareto2 in the file `Distribution.py`:
 
 ```python 
 class ParetoType2(Distribution):
@@ -246,7 +211,7 @@ class ParetoType2(Distribution):
         return (self.parameters_value["loc"], float('inf'))
 ```
 
-Finally, add the instance ParetoType2Model of the class Model in the file Models.py:
+Finally, add the instance `ParetoType2Model` of the class `Model` in the file `Models.py`:
 
 ```python 
 class ParetoType2Model(Model):
