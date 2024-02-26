@@ -3,7 +3,8 @@ from typing import Dict, Tuple, List
 import numpy as np
 from scipy.stats import norm, gamma, lognorm, weibull_min, cauchy, genpareto, pareto, laplace,uniform
 
-from InsufficientGibbs.Variable import Variable, ContinuousVariable, PositiveContinuousVariable
+# from InsufficientGibbs.Variable import Variable, ContinuousVariable, PositiveContinuousVariable
+from Variable import Variable, ContinuousVariable, PositiveContinuousVariable
 import matplotlib.pyplot as plt
 
 class Distribution:
@@ -188,6 +189,39 @@ class Gamma(Distribution):
         return (0, float('inf'))
     
     
+class TranslatedGamma(Distribution):
+    """
+    Container for Translated Gamma Distribution
+
+    Parameters
+    ----------
+    loc : float
+        location of the Gamma
+    scale : float
+        scale of the Gamma
+    shape : float
+        shape of the Gamma
+    name : str
+    """
+    def __init__(self, 
+            loc: float=0,
+            scale: float=1,
+            shape: float=1,
+            name: str="",
+            theta: list = []) -> None:
+        if theta!=[]:
+            loc,scale,shape = theta
+        self.loc = ContinuousVariable(loc, name='loc')
+        self.scale = PositiveContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = gamma(a=self.shape.value, scale=self.scale.value, loc=self.loc.value)
+        self.distrib_name = "gamma"
+        parameters_dict = {'loc':self.loc, 'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+
+    def domain(self) -> Tuple[float, float]:
+        return (self.loc.value, float('inf'))
     
 class ReparametrizedGamma(Distribution):
     """
@@ -286,6 +320,39 @@ class LogNormal(Distribution):
 
     def domain(self) -> Tuple[float, float]:
         return (0, float('inf'))
+    
+class TranslatedLogNormal(Distribution):
+    """
+    Container for Translated Lognormal Distribution
+
+    Parameters
+    ----------
+    loc : float
+        location of the Lognormal
+    scale : float
+        log(rv) has loc scale
+    shape : float
+        log(rv) has scale shape
+    name : str
+    """
+    def __init__(self,
+            loc: float=0,
+            scale: float=0,
+            shape: float=1,
+            name: str="",
+            theta: list = []) -> None:
+        if theta!=[]:
+            loc,scale,shape = theta
+        self.loc = ContinuousVariable(loc, name='loc')
+        self.scale = ContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = lognorm(s=self.shape.value, scale=np.exp(self.scale.value), loc=self.loc.value)
+        parameters_dict = {'loc':self.loc, 'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+
+    def domain(self) -> Tuple[float, float]:
+        return (self.loc.value, float('inf'))
     
 class ReparametrizedLogNormal(Distribution):
     """
@@ -453,3 +520,85 @@ class GeneralizedPareto(Distribution):
 
     def domain(self) -> Tuple[float, float]:
         return (self.parameters_value["loc"], float('inf'))
+class Pareto(Distribution):
+    """
+    Container for Pareto Distribution
+
+    Parameters
+    ----------
+    scale : float
+        scale of the pareto
+    shape : float
+        shape of the pareto
+    name : str
+    """
+    def __init__(self, 
+            scale: float=1,
+            shape: float=1,
+            name: str="") -> None:
+        self.scale = PositiveContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = pareto(b=self.shape.value, scale=self.scale.value)
+        parameters_dict = {'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+
+    def domain(self) -> Tuple[float, float]:
+        return (self.parameters_value["scale"], float('inf'))
+    
+    
+class pareto2:
+    def __init__(self, loc=0, scale=1,shape=1):
+        self.loc = loc
+        self.scale = scale
+        self.shape = shape
+        
+    def pdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,(self.shape/self.scale)*(1+(x-self.loc)/self.scale)**(-self.shape-1),0)
+    
+    def cdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,1-(1+(x-self.loc)/self.scale)**(-self.shape),0)
+    def ppf(self,x):
+        x=np.array(x)
+        return self.loc+self.scale*((1-x)**(-1/self.shape)-1)
+    def logpdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,np.log(self.shape)-np.log(self.scale)-(self.shape+1)*np.log(1+(x-self.loc)/self.scale),-np.inf)
+    def rvs(self,size):
+        return self.ppf(np.random.random(size))
+    def mean(self):
+        if self.shape<1:
+            return np.inf
+        else:
+            return self.scale/(self.shape-1)+self.loc
+    def std(self):
+        if self.shape<2:
+            return np.inf
+        else:
+            return self.scale*np.sqrt(self.shape/((self.shape-1)**2*(self.shape-2)))
+        
+class ParetoType2(Distribution):
+    
+    def __init__(self,
+            loc: float=0,
+            scale: float=1,
+            shape: float=1,
+            name: str="",
+            theta: list = []) -> None:
+        if theta!=[]:
+            loc,scale,shape = theta
+        self.loc = ContinuousVariable(loc, name='loc')
+        self.scale = PositiveContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = pareto2(loc=self.loc.value, scale=self.scale.value,shape=self.shape.value)
+        parameters_dict = {'loc': self.loc, 'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+        
+        
+    def domain(self) -> Tuple[float, float]:
+        return (self.parameters_value["loc"], float('inf'))
+    
+    

@@ -3,12 +3,29 @@ from typing import Dict, Tuple
 from tqdm import tqdm
 import numpy as np
 from scipy.stats import norm, cauchy, lognorm, weibull_min,gamma,genpareto,median_abs_deviation,laplace, invgamma, iqr
-from InsufficientGibbs.Distribution import *
-
+# from InsufficientGibbs.Distribution import *
+from Distribution import *
+import seaborn as sns
 
 def medMAD(X): return (np.median(X), median_abs_deviation(X))  
 
-
+def display_chains(dico,burnin=0,true_par=[]):
+    par_names = list(dico["chains"].keys())
+    
+    f,ax= plt.subplots(2,len(par_names),figsize=(20,10))
+    for i,par_name in enumerate(par_names):
+        sns.kdeplot(dico["chains"][par_name][burnin:],ax=ax[0,i])
+        ax[0,i].set_xlabel(par_name, fontsize= 15)
+        ax[0,i].set_ylabel("KDE density", fontsize= 15)
+        ax[1,i].plot(dico["chains"][par_name][burnin:])
+        ax[1,i].set_xlabel("Iterations", fontsize= 15)
+        ax[1,i].set_ylabel(par_name, fontsize= 15)
+        
+        if true_par!=[]:
+            ax[1,i].axhline(true_par[i],color="red")
+            ax[0,i].axvline(true_par[i],color="red")
+    plt.show()
+    
 class Model:
     
     """
@@ -34,9 +51,9 @@ class Model:
     
 
     def _check_dict(self, parameters_dict:Dict[str, Distribution]) -> Dict[str, Distribution]:
-        for key, value in self.parameters_dict.items():
-            if not isinstance(value, Distribution):
-                raise ValueError(f'Input parameter "{key}" of "{self.__class__.__name__}" needs to be a Distribution (see InsufficientGibbs.distributions), but is of type {type(value)}.')
+        # for key, value in self.parameters_dict.items():
+            # if not isinstance(value, Distribution):
+            #     raise ValueError(f'Input parameter "{key}" of "{self.__class__.__name__}" needs to be a Distribution (see InsufficientGibbs.distributions), but is of type {type(value)}.')
         return parameters_dict
 
     def _check_domain(self, X) -> None:
@@ -368,15 +385,15 @@ class Model:
     def Init_X_med_MAD(self, N, med, MAD, method):
         if method == "naive":
             return self.Init_X_med_MAD_naive(N, med, MAD)
-        elif method == "loc_scale_stable":
+        elif method == "stable":
             return self.Init_X_med_MAD_loc_scale_stable(N, med, MAD)
         else:
             raise ValueError("Invalid initialization method: {} Please specify the initialization in the model instance!".format(method))
         
     
-    def med_MAD_Init(self,N, med, MAD, theta_0, epsilon):
+    def med_MAD_Init(self,N, med, MAD, theta_0):
         if theta_0.keys()!= self.par_names:
-            theta_0 = self.med_IQR_Init(med,MAD)
+            theta_0 = self.Init_theta_med_MAD(med,MAD)
         self.parameters_value = theta_0
         self._distribution= self.type_distribution(theta=list(self.parameters_value.values()))
         return self.Init_X_med_MAD(N, med, MAD, self.init_method)
@@ -924,7 +941,7 @@ class Model:
         if std_prop_dict == {}:
             std_prop_dict = {param_name: 0.1 for param_name in self.par_names}
         
-        X = self.med_MAD_Init(med,MAD,N)
+        X = self.med_MAD_Init(N, med, MAD, theta_0)
 
         theta_0 = self.parameters_value
         Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
@@ -1009,14 +1026,15 @@ class Model:
             X_0 = self.Init_X_med_IQR_loc_scale_stable(N,med,IQR)
         else:
             raise Exception("Initialization method not recognized")
-        
+        print("N = {}".format(N))
         P = [0.25, 0.5, 0.75]
         H = np.array(P) * (N - 1) + 1
         I = np.floor(H).astype(int)
         G = np.round(H - I, 8)
         Q_tot = []
         I_order = []
-
+        print("I = {}".format(I))
+        X_0 = np.sort(X_0)
         for k in range(len(I)):
             if G[k] == 0:
                 Q_tot.append(X_0[I[k] - 1])
@@ -1037,6 +1055,7 @@ class Model:
             I_sim = [I[0], I[1], I[2], I[2] + 1]
 
         I_order = np.array(I_order)
+        # print("In Init_X_med_IQR, Q_sim = {} Q_tot = {} I_order = {} G = {} I_sim = {}".format(Q_sim, Q_tot, I_order, G, I_sim))
         return X_0, Q_sim, Q_tot, I_order, G, I_sim
     
     def med_IQR_Init(self, N, med, IQR, theta_0, epsilon):
@@ -1048,7 +1067,7 @@ class Model:
     
         
 
-    def OrderStats_med_IQR_MH(self, med, IQR, Q_sim, Q_tot, N, I_order, G, I_sim, std_prop):
+    def OrderStats_med_IQR_MH(self, N, med, IQR, Q_sim, Q_tot, I_order, G, I_sim, std_prop):
         
         f,Q = self._distribution.pdf, self._distribution.ppf
 
@@ -1064,6 +1083,7 @@ class Model:
         p = I_sim / (N + 1)
         Var_K = p * (1 - p) / ((N + 2) * f(Q(p)) ** 2)
         Std_Kernel = np.array(std_prop * np.sqrt(Var_K)) * Norm
+        # print("Q_sim = {}, Std_Kernel = {}".format(Q_sim, Std_Kernel))    
         Q_sim_star_full = np.random.normal(Q_sim, Std_Kernel)
 
         for i in range(len(Q_sim)):
@@ -1077,8 +1097,8 @@ class Model:
                 Q_tot_star = [ Q_sim_star[0], ( (1 - G[2]) * Q_sim_star[2] + G[2] * Q_sim_star[3] - (1 - G[0]) * Q_sim_star[0] - IQR ) / G[0], Q_sim_star[1], 2 * med - Q_sim_star[1], Q_sim_star[2], Q_sim_star[3], ]
 
             if (Q_tot_star == np.sort(Q_tot_star)).all():
-                log_density_candidate = self.log_order_stats_density(Q_tot_star, I_order, N)
-                log_density_current = self.log_order_stats_density(Q_tot, I_order, N)
+                log_density_candidate = self.log_order_stats_density(Q_tot_star, I_order)
+                log_density_current = self.log_order_stats_density(Q_tot, I_order)
                 ratio = np.exp(log_density_candidate - log_density_current)
                 if np.random.uniform(0, 1) < ratio:
                     Q_sim[i] = Q_sim_star_full[i]
@@ -1092,10 +1112,10 @@ class Model:
 
         return Q_sim, Q_tot
     
-    def Resample_X_med_IQR(self,med, IQR, Q_sim, Q_tot, N, I_order, G, I_sim, std_prop):
-
+    def Resample_X_med_IQR(self,N, med, IQR, Q_sim, Q_tot, I_order, G, I_sim, std_prop):
+        # print("In Resample_X_med_IQR, Q_sim = {} Q_tot ={}".format(Q_sim ,Q_tot))
         Q_sim, Q_tot = self.OrderStats_med_IQR_MH(
-            med, IQR, Q_sim, Q_tot, N, I_order, G, I_sim, std_prop
+            N, med, IQR, Q_sim, Q_tot, I_order, G, I_sim, std_prop
         )
         
         Trunc_eff = I_order[1:]-I_order[:-1]-1
@@ -1142,7 +1162,7 @@ class Model:
         if std_prop_dict == {}:
             std_prop_dict = {param_name: 0.1 for param_name in self.par_names}
         
-        X, q_sim, q_tot, I_order, G, I_sim = self.med_IQR_Init(med, IQR, N, epsilon=epsilon)
+        X, q_sim, q_tot, I_order, G, I_sim = self.med_IQR_Init(N, med, IQR, theta_0, epsilon=epsilon)
         
         theta_0 = self.parameters_value
         Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
@@ -1151,7 +1171,7 @@ class Model:
         Q_Tot = [q_tot]
         Q_Sim = [q_sim]
         for i in tqdm(range(T), disable=not (verbose)):
-            X,q_tot,q_sim = self.Resample_X_med_IQR(med, IQR, Q_Sim[-1], Q_Tot[-1], N, I_order, G, I_sim, std_prop_quantile)
+            X,q_sim,q_tot = self.Resample_X_med_IQR(N, med, IQR, Q_Sim[-1], Q_Tot[-1], I_order, G, I_sim, std_prop_quantile)
             
             theta = self.posterior(X,std_prop_dict)
 

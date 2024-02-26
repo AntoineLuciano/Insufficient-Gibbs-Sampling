@@ -3,6 +3,7 @@ README.md
 pyproject.toml
 src/InsufficientGibbs/Distribution.py
 src/InsufficientGibbs/Model.py
+src/InsufficientGibbs/Models.py
 src/InsufficientGibbs/Variable.py
 src/InsufficientGibbs/__init__.py
 src/InsufficientGibbs.egg-info/PKG-INFO
