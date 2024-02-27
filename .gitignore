@@ -9,3 +9,4 @@ RobustGibbsObject/*
 */.eggs/*
 */.hypothesis/*
 */.coverage
+.DS_Store
