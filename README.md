@@ -1,4 +1,5 @@
 # Insufficient Gibbs Sampling
+![Static Badge](https://img.shields.io/badge/build-stable-green)
 ![Static Badge](https://img.shields.io/badge/version-1.1.0-blue)
 
 
