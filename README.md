@@ -135,7 +135,7 @@ Add the the instance `ParetoModel` of the class `Model` in the file `Models.py`:
 
 ```python    
 
-class ParetoModel:
+class ParetoModel(Model):
     def __init__(self, scale:Distribution, shape:Distribution) -> None:
         self.scale = scale
         self.shape = shape

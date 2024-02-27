@@ -192,7 +192,7 @@ class TranslatedGammaModel(Model):
     
     def Init_theta_Quantile(self, Q, P):
         loc = 2*Q[0]-Q[1]
-        scale =  2
+        shape =  2
         scale = (Q[-1] - Q[0]) / (TranslatedGamma(loc=loc,shape=shape)._distribution.ppf(P[-1]) - TranslatedGamma(loc=loc,shape=shape)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
     
@@ -532,7 +532,7 @@ class ParetoType2Model(Model):
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
     
     
-class ParetoModel:
+class ParetoModel(Model):
     def __init__(self, scale:Distribution, shape:Distribution) -> None:
         self.scale = scale
         self.shape = shape
