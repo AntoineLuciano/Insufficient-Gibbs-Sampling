@@ -1,11 +1,10 @@
 from typing import Dict, Tuple, List
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm, gamma, lognorm, weibull_min, cauchy, genpareto, pareto, laplace,uniform
 
-# from InsufficientGibbs.Variable import Variable, ContinuousVariable, PositiveContinuousVariable
-from Variable import Variable, ContinuousVariable, PositiveContinuousVariable
-import matplotlib.pyplot as plt
+from InsufficientGibbs.Variable import Variable, ContinuousVariable, PositiveContinuousVariable
 
 class Distribution:
     """

@@ -2,10 +2,13 @@ from typing import Dict, Tuple
 
 from tqdm import tqdm
 import numpy as np
-from scipy.stats import norm, cauchy, lognorm, weibull_min,gamma,genpareto,median_abs_deviation,laplace, invgamma, iqr
-# from InsufficientGibbs.Distribution import *
-from Distribution import *
 import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import norm, cauchy, lognorm, weibull_min,gamma,genpareto,median_abs_deviation,laplace, invgamma, iqr
+
+from InsufficientGibbs.Distribution import *
+
+
 
 def medMAD(X): return (np.median(X), median_abs_deviation(X))  
 
@@ -1187,7 +1190,6 @@ class Model:
         if verbose:
             Q = np.array(Q_Sim).T
             for i in range(Q.shape[0]):
-                q = Q[i]
                 print(
                     "Acceptance rate of the order statistics ({}) = {:.2%}".format(
                         int(I_sim[i]), (len(np.unique(Q[i])) - 1) / Q.shape[1]
