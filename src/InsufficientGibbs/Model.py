@@ -6,8 +6,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import norm, median_abs_deviation, invgamma, iqr
 
-from InsufficientGibbs.Distribution import *
-
+# from InsufficientGibbs.Distribution import *
+from Distribution import *
 
 
 def medMAD(X): return (np.median(X), median_abs_deviation(X))  
@@ -294,6 +294,7 @@ class Model:
         X, q, q_tot, q_sim, I, I_sim, G = self.Quantile_Init(Q, P, N, theta_0, epsilon=epsilon)
         
         theta_0 = self.parameters_value
+        if verbose: print("Initialization done:", theta_0)
         Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         X_list = [X]
         Q_Tot = [q_tot]
@@ -947,6 +948,7 @@ class Model:
         X = self.med_MAD_Init(N, med, MAD, theta_0)
 
         theta_0 = self.parameters_value
+        if verbose: print("Initialization done:", theta_0)
         Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         
         X_list = [X]
@@ -1168,6 +1170,7 @@ class Model:
         X, q_sim, q_tot, I_order, G, I_sim = self.med_IQR_Init(N, med, IQR, theta_0, epsilon=epsilon)
         
         theta_0 = self.parameters_value
+        if verbose: print("Initialization done:", theta_0)
         Chains = {par_name: [theta_0[par_name]] for par_name in self.par_names}
         
         X_list = [X]

@@ -59,7 +59,7 @@ To sample from the posterior of the model parameters given the observed statisti
 
 ```python 
 from InsufficientGibbs.Distribution import Normal, InverseGamma
-from InsufficientGibbs.Model import CauchyModel
+from InsufficientGibbs.Models import CauchyModel
 
 # Creating the prior distributions variables
 mu = Normal(0,10, name= "x_0")
@@ -137,10 +137,17 @@ Add the the instance `ParetoModel` of the class `Model` in the file `Models.py`:
 
 class ParetoModel(Model):
     def __init__(self, scale:Distribution, shape:Distribution) -> None:
+        if scale.name == "": scale.name = "scale"
+        if shape.name == "": shape.name = "shape"
+        
+        if scale.name == shape.name:
+            raise ValueError("parameters must have different names.")
+        
         self.scale = scale
         self.shape = shape
         self.type_distribution = Pareto
         self.parameters_dict = {scale.name: scale, shape.name: shape}
+        super().__init__(self.parameters_dict)
         self.distrib_name = "pareto"
         self.init_method = "naive"
         
@@ -148,7 +155,7 @@ class ParetoModel(Model):
         return (0, float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        scale = 1
+        scale = Q[0]-1
         shape = (Q[-1] - Q[0]) / (Pareto(scale=scale)._distribution.ppf(P[-1]) - Pareto(scale=scale)._distribution.ppf(P[0]))
         return {self.scale.name: scale, self.shape.name: shape}
     
@@ -223,6 +230,13 @@ Finally, add the instance `ParetoType2Model` of the class `Model` in the file `M
 ```python 
 class ParetoType2Model(Model):
     def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
+        if loc.name == "": loc.name = "loc"
+        if scale.name == "": scale.name = "scale"
+        if shape.name == "": shape.name = "shape"
+        
+        if loc.name == scale.name or loc.name == shape.name or scale.name == shape.name:
+            raise ValueError("parameters must have different names.")
+        
         self.loc = loc
         self.scale = scale
         self.shape = shape
@@ -237,8 +251,8 @@ class ParetoType2Model(Model):
     
     def Init_theta_Quantile(self, Q, P):
         loc = 2*Q[0]-Q[1]
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[0]))
+        shape = 2.5
+        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, shape=shape)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
     
     def Init_theta_med_MAD(self, med, MAD):
@@ -252,4 +266,5 @@ class ParetoType2Model(Model):
         scale = 1
         shape = 1.5
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
+    
 ```

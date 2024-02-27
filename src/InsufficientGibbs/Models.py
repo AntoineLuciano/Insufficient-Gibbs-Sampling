@@ -1,5 +1,7 @@
-from InsufficientGibbs.Model import Model
-from InsufficientGibbs.Distribution import *
+# from InsufficientGibbs.Model import Model
+# from InsufficientGibbs.Distribution import *
+from Model import Model
+from Distribution import *
 
 from typing import Dict, Tuple
 from scipy.stats import norm
@@ -26,7 +28,7 @@ class NormalModel(Model):
         return (float('-inf'), float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        loc = Q[np.argmin(np.abs(P-.5))]
+        loc = Q[np.argmin(np.abs(np.array(P)-.5))]
         scale = (Q[-1] - Q[0]) / (Normal(loc=loc)._distribution.ppf(P[-1]) - Normal(loc=loc)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale}
             
@@ -52,7 +54,7 @@ class NormalKnownScaleModel(Model):
         return (float('-inf'), float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        loc = Q[np.argmin(np.abs(P-.5))]
+        loc = Q[np.argmin(np.abs(np.array(P)-.5))]
         return {self.loc.name: loc}
     
     def Init_theta_med_MAD(self, med, MAD):
@@ -84,7 +86,7 @@ class CauchyModel(Model):
         return (float('-inf'), float('inf'))
 
     def Init_theta_Quantile(self, Q, P):
-        loc = Q[np.argmin(np.abs(P-.5))]
+        loc = Q[np.argmin(np.abs(np.array(P)-.5))]
         scale = (Q[-1] - Q[0]) / (Cauchy(loc=loc)._distribution.ppf(P[-1]) - Cauchy(loc=loc)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale}
     
@@ -231,7 +233,7 @@ class LogNormalModel(Model):
         return (0, float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        scale = np.log(Q[np.argmin(np.abs(P-.5))])
+        scale = np.log(Q[np.argmin(np.abs(np.array(P)-.5))])
         shape = (Q[-1] - Q[0]) / (LogNormal(shape=1, scale=np.exp(scale))._distribution.ppf(P[-1]) - LogNormal(shape=1, scale=np.exp(scale))._distribution.ppf(P[0]))
         return {self.scale.name: scale, self.shape.name: shape}
     
@@ -266,7 +268,7 @@ class ReparametrizedLogNormalModel(Model):
             return (0, float('inf'))
         
         def Init_theta_Quantile(self, Q, P):
-            scale = np.log(Q[np.argmin(np.abs(P-.5))])
+            scale = np.log(Q[np.argmin(np.abs(np.array(P)-.5))])
             shape = (Q[-1] - Q[0]) / (LogNormal(scale=scale, shape=1)._distribution.ppf(P[-1]) - LogNormal(scale=scale, shape=1)._distribution.ppf(P[0]))
             mean = np.exp(scale+shape**2/2)
             std = np.sqrt((np.exp(shape**2)-1)*np.exp(2*scale+shape**2))
@@ -311,7 +313,7 @@ class TranslatedLogNormalModel(Model):
     
     def Init_theta_Quantile(self, Q, P):
         loc = 2*Q[0]-Q[1]
-        scale = np.log(Q[np.argmin(np.abs(P-.5))]-loc)
+        scale = np.log(Q[np.argmin(np.abs(np.array(P)-.5))]-loc)
         shape = (Q[-1] - Q[0]) / (TranslatedLogNormal(loc=loc, scale=scale, shape = 1)._distribution.ppf(P[-1]) - TranslatedLogNormal(loc=loc, scale = scale, shape = 1)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
     
@@ -459,7 +461,7 @@ class LaplaceModel(Model):
         return (float('-inf'), float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        loc = Q[np.argmin(np.abs(P-.5))]
+        loc = Q[np.argmin(np.abs(np.array(P)-.5))]
         scale = (Q[-1] - Q[0]) / (Laplace(loc=loc)._distribution.ppf(P[-1]) - Laplace(loc=loc)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale}
     
@@ -487,7 +489,7 @@ class LaplaceKnownScaleModel(Model):
         return (float('-inf'), float('inf'))
     
     def Init_theta_Quantile(self, Q, P):
-        loc = Q[np.argmin(np.abs(P-.5))]
+        loc = Q[np.argmin(np.abs(np.array(P)-.5))]
         return {self.loc.name: loc}
     
     def Init_theta_med_MAD(self, med, MAD):
@@ -498,9 +500,52 @@ class LaplaceKnownScaleModel(Model):
         loc = med
         return {self.loc.name: loc}
 
+
+    
+class ParetoModel(Model):
+    def __init__(self, scale:Distribution, shape:Distribution) -> None:
+        if scale.name == "": scale.name = "scale"
+        if shape.name == "": shape.name = "shape"
+        
+        if scale.name == shape.name:
+            raise ValueError("parameters must have different names.")
+        
+        self.scale = scale
+        self.shape = shape
+        self.type_distribution = Pareto
+        self.parameters_dict = {scale.name: scale, shape.name: shape}
+        super().__init__(self.parameters_dict)
+        self.distrib_name = "pareto"
+        self.init_method = "naive"
+        
+    def domain(self) -> Tuple[float, float]:
+        return (0, float('inf'))
+    
+    def Init_theta_Quantile(self, Q, P):
+        scale = Q[0]-1
+        shape = (Q[-1] - Q[0]) / (Pareto(scale=scale)._distribution.ppf(P[-1]) - Pareto(scale=scale)._distribution.ppf(P[0]))
+        return {self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_MAD(self, med, MAD):
+        scale = 1
+        shape = 1.5
+        return {self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_IQR(self, med, IQR):
+        scale = 1
+        shape = 1.5
+        return {self.scale.name: scale, self.shape.name: shape}
+    
     
 class ParetoType2Model(Model):
     def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
+        if loc.name == "": loc.name = "loc"
+        if scale.name == "": scale.name = "scale"
+        if shape.name == "": shape.name = "shape"
+        
+        if loc.name == scale.name or loc.name == shape.name or scale.name == shape.name:
+            raise ValueError("parameters must have different names.")
+        
         self.loc = loc
         self.scale = scale
         self.shape = shape
@@ -515,8 +560,8 @@ class ParetoType2Model(Model):
     
     def Init_theta_Quantile(self, Q, P):
         loc = 2*Q[0]-Q[1]
-        shape = 1.5
-        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[0]))
+        shape = 2.5
+        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, shape=shape)._distribution.ppf(P[0]))
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
     
     def Init_theta_med_MAD(self, med, MAD):
@@ -530,33 +575,4 @@ class ParetoType2Model(Model):
         scale = 1
         shape = 1.5
         return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
-    
-    
-class ParetoModel(Model):
-    def __init__(self, scale:Distribution, shape:Distribution) -> None:
-        self.scale = scale
-        self.shape = shape
-        self.type_distribution = Pareto
-        self.parameters_dict = {scale.name: scale, shape.name: shape}
-        super().__init__(self.parameters_dict)
-        self.distrib_name = "pareto"
-        self.init_method = "naive"
-        
-    def domain(self) -> Tuple[float, float]:
-        return (0, float('inf'))
-    
-    def Init_theta_Quantile(self, Q, P):
-        scale = 1
-        shape = (Q[-1] - Q[0]) / (Pareto(scale=scale)._distribution.ppf(P[-1]) - Pareto(scale=scale)._distribution.ppf(P[0]))
-        return {self.scale.name: scale, self.shape.name: shape}
-    
-    def Init_theta_med_MAD(self, med, MAD):
-        scale = 1
-        shape = 1.5
-        return {self.scale.name: scale, self.shape.name: shape}
-    
-    def Init_theta_med_IQR(self, med, IQR):
-        scale = 1
-        shape = 1.5
-        return {self.scale.name: scale, self.shape.name: shape}
     
