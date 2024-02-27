@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: InsufficientGibbs
-Version: 1.0.8
+Version: 1.0.9
 Summary: Package for performing Bayesian inference with insufficient and robust statistics
 Author-email: Antoine Luciano <antoine.luciano@dauphine.eu>
 Project-URL: Homepage, https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling
@@ -91,11 +91,171 @@ Cauchy_med_IQR = model.Gibbs_med_IQR(T, N, med, IQR)
 med, MAD = 0, 1
 Cauchy_med_MAD = model.Gibbs_med_MAD(T, N, med, MAD)
 ```
+You can display the chain by using the `display_chains` function.
 
 
 # How to add new distributions and models
 
-To make it possible to use this new method with models not implemented in the package, users can easily add their own models by simply adding an instance to the Distribution and Model classes.
+As outlined in our paper, our method is applicable to all continuous distributions with compact support, as it only requires simulation according to a truncated version. Therefore, we provide guidance on how users can seamlessly integrate their own models by simply adding instances to the `Distribution` and `Model` classes.
+
+For the `Distribution` class, an instance should include an initialization function `__init__`defining a variable `_distribution` containing all relevant distribution information (e.g., pdf, cdf, ppf) and a domain function describing the domain of definition.
+
+Similarly, for the `Model` class, an instance should include an initialization function `__init__`, along with functions returning initialization parameters for the three studied scenarios (`Init_theta_Quantile`, `Init_theta_med_MAD`, and `Init_theta_med_IQR`).
+
+To illustrate, we present examples of distributions. First, we showcase a distribution already implemented in SciPy (the Pareto distribution), followed by a custom implementation (the Pareto Type II distribution).
+
+
+## Example of the Pareto Distribution
+
+Add the the instance `Pareto` of the class `Distribution` in the file `Distribution.py`:
+
+```python 
+class Pareto(Distribution):
+    """
+    Container for Pareto Distribution
+
+    Parameters
+    ----------
+    scale : float
+        scale of the pareto
+    shape : float
+        shape of the pareto
+    name : str
+    """
+    def __init__(self, 
+            scale: float=1,
+            shape: float=1,
+            name: str="") -> None:
+        self.scale = PositiveContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = pareto(b=self.shape.value, scale=self.scale.value)
+        parameters_dict = {'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+
+    def domain(self) -> Tuple[float, float]:
+        return (self.parameters_value["scale"], float('inf'))
+```
+
+Add the the instance `ParetoModel` of the class `Model` in the file `Models.py`:
+
+
+```python    
+class ParetoModel:
+    def __init__(self, scale:Distribution, shape:Distribution) -> None:
+        self.scale = scale
+        self.shape = shape
+        self.type_distribution = Pareto
+        self.parameters_dict = {scale.name: scale, shape.name: shape}
+        self.distrib_name = "pareto"
+        self.init_method = "naive"
+        
+    def domain(self) -> Tuple[float, float]:
+        return (0, float('inf'))
+    
+    def Init_theta_Quantile(self, Q, P):
+        scale = 1
+        shape = (Q[-1] - Q[0]) / (Pareto(scale=scale)._distribution.ppf(P[-1]) - Pareto(scale=scale)._distribution.ppf(P[0]))
+        return {self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_MAD(self, med, MAD):
+        scale = 1
+        shape = 1.5
+        return {self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_IQR(self, med, IQR):
+        scale = 1
+        shape = 1.5
+        return {self.scale.name: scale, self.shape.name: shape}
+```
 
 ## Example of the Pareto Type II distribution
 
+First, define a class `pareto2` that plays the same role as the functions in SciPy.
+
+
+```python 
+class pareto2:
+    def __init__(self, loc=0, scale=1,shape=1):
+        self.loc = loc
+        self.scale = scale
+        self.shape = shape
+        
+    def pdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,(self.shape/self.scale)*(1+(x-self.loc)/self.scale)**(-self.shape-1),0)
+    
+    def cdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,1-(1+(x-self.loc)/self.scale)**(-self.shape),0)
+    def ppf(self,x):
+        x=np.array(x)
+        return self.loc+self.scale*((1-x)**(-1/self.shape)-1)
+    def logpdf(self,x):
+        x=np.array(x)
+        return np.where(x>=self.loc,np.log(self.shape)-np.log(self.scale)-(self.shape+1)*np.log(1+(x-self.loc)/self.scale),-np.inf)
+    def rvs(self,size):
+        return self.ppf(np.random.random(size))
+```
+
+Then, add the instance `ParetoType2` of the class `Distribution` using the above class pareto2 in the file `Distribution.py`:
+
+```python 
+class ParetoType2(Distribution):
+    
+    def __init__(self,
+            loc: float=0,
+            scale: float=1,
+            shape: float=1,
+            name: str="",
+            theta: list = []) -> None:
+        if theta!=[]:
+            loc,scale,shape = theta
+        self.loc = ContinuousVariable(loc, name='loc')
+        self.scale = PositiveContinuousVariable(scale, name='scale')
+        self.shape = PositiveContinuousVariable(shape, name='shape')
+        self.name = name
+        self._distribution = pareto2(loc=self.loc.value, scale=self.scale.value,shape=self.shape.value)
+        parameters_dict = {'loc': self.loc, 'scale':self.scale, 'shape':self.shape}
+        super().__init__(parameters_dict, self.name)
+        
+        
+    def domain(self) -> Tuple[float, float]:
+        return (self.parameters_value["loc"], float('inf'))
+```
+
+Finally, add the instance `ParetoType2Model` of the class `Model` in the file `Models.py`:
+
+```python 
+class ParetoType2Model(Model):
+    def __init__(self, loc:Distribution, scale:Distribution, shape:Distribution) -> None:
+        self.loc = loc
+        self.scale = scale
+        self.shape = shape
+        self.type_distribution = ParetoType2
+        self.parameters_dict = {loc.name: loc, scale.name: scale, shape.name: shape}
+        super().__init__(self.parameters_dict)
+        self.distrib_name = "pareto_type2"
+        self.init_method = "naive"
+        
+    def domain(self) -> Tuple[float, float]:
+        return (self.parameters_value["loc"], float('inf'))
+    
+    def Init_theta_Quantile(self, Q, P):
+        loc = 2*Q[0]-Q[1]
+        shape = 1.5
+        scale = (Q[-1] - Q[0]) / (ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[-1]) - ParetoType2(loc=loc, scale=scale, shape=shape)._distribution.ppf(P[0]))
+        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_MAD(self, med, MAD):
+        loc = med-2*MAD
+        scale = 1
+        shape = 1.5
+        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
+    
+    def Init_theta_med_IQR(self, med, IQR):
+        loc = med-IQR
+        scale = 1
+        shape = 1.5
+        return {self.loc.name: loc, self.scale.name: scale, self.shape.name: shape}
+```

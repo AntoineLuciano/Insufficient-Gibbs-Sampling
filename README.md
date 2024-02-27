@@ -1,4 +1,6 @@
 # Insufficient Gibbs Sampling
+![Static Badge](https://img.shields.io/badge/version-1.1.0-blue)
+
 
 The `InsufficientGibbs` package offers functionalities for sampling from posterior parameters when only robust and insufficient statistics of the data are available. A comprehensive explanation of the underlying theory can be found in the associated paper on arXiv (\url{link}{https://arxiv.org/abs/2307.14973}). Additionally, the code responsible for generating all figures presented in the paper is located in the `Figures` folder.
 ## `InsufficientGibbs` package
@@ -97,6 +99,8 @@ To illustrate, we present examples of distributions. First, we showcase a distri
 Add the the instance `Pareto` of the class `Distribution` in the file `Distribution.py`:
 
 ```python 
+from scipy.stats import pareto
+
 class Pareto(Distribution):
     """
     Container for Pareto Distribution
@@ -128,6 +132,7 @@ Add the the instance `ParetoModel` of the class `Model` in the file `Models.py`:
 
 
 ```python    
+
 class ParetoModel:
     def __init__(self, scale:Distribution, shape:Distribution) -> None:
         self.scale = scale
