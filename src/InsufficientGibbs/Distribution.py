@@ -534,7 +534,10 @@ class Pareto(Distribution):
     def __init__(self, 
             scale: float=1,
             shape: float=1,
-            name: str="") -> None:
+            name: str="",
+            theta: list = []) -> None:
+        if theta!=[]:
+            scale,shape = theta
         self.scale = PositiveContinuousVariable(scale, name='scale')
         self.shape = PositiveContinuousVariable(shape, name='shape')
         self.name = name
