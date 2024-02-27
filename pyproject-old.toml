@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0","setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "InsufficientGibbs"
+description = "Package for performing Bayesian inference with insufficient and robust statistics"
+authors = [
+  { name="Antoine Luciano", email="antoine.luciano@dauphine.eu" },
+]
+readme = "README.md"
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling"
+
+
+[tool.setuptools_scm]
