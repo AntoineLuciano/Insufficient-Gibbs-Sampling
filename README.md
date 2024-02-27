@@ -1,6 +1,6 @@
 # Insufficient Gibbs Sampling
 ![Static Badge](https://img.shields.io/badge/build-stable-green)
-![Static Badge](https://img.shields.io/badge/version-1.1.4-blue)
+![Static Badge](https://img.shields.io/badge/version-1.1.10-blue)
 
 
 The `InsufficientGibbs` package offers functionalities for sampling from posterior parameters when only robust and insufficient statistics of the data are available. A comprehensive explanation of the underlying theory can be found in the associated paper on arXiv https://arxiv.org/abs/2307.14973. Additionally, the code responsible for generating all figures presented in the paper is located in the `Figures` folder.
@@ -83,6 +83,7 @@ med, MAD = 0, 1
 Cauchy_med_MAD = model.Gibbs_med_MAD(T, N, med, MAD)
 ```
 You can display the chain by using the `display_chains` function.
+
 
 
 # How to add new distributions and models
