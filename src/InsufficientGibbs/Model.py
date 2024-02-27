@@ -4,7 +4,7 @@ from tqdm import tqdm
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import norm, cauchy, lognorm, weibull_min,gamma,genpareto,median_abs_deviation,laplace, invgamma, iqr
+from scipy.stats import norm, median_abs_deviation, invgamma, iqr
 
 from InsufficientGibbs.Distribution import *
 
@@ -192,7 +192,7 @@ class Model:
     
     def Quantile_Init(self,  Q, P, N, theta_0 = {}, epsilon=0.001):
         if theta_0.keys()!= self.par_names:
-            theta_0 = self.Init_theta_Quantile(Q, P, N, theta_0)
+            theta_0 = self.Init_theta_Quantile(Q, P)
         self.parameters_value = theta_0
         self._distribution= self.type_distribution(theta=list(self.parameters_value.values()))
         return self.Init_X_Quantile(Q, P, N, epsilon=epsilon)
