@@ -1,7 +1,7 @@
-# from InsufficientGibbs.Model import Model
-# from InsufficientGibbs.Distribution import *
-from Model import Model
-from Distribution import *
+from InsufficientGibbs.Model import Model
+from InsufficientGibbs.Distribution import *
+# from Model import Model
+# from Distribution import *
 
 from typing import Dict, Tuple
 from scipy.stats import norm

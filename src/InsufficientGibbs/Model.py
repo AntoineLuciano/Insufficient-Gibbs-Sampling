@@ -6,8 +6,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import norm, median_abs_deviation, invgamma, iqr
 
-# from InsufficientGibbs.Distribution import *
-from Distribution import *
+from InsufficientGibbs.Distribution import *
+# from Distribution import *
 
 
 def medMAD(X): return (np.median(X), median_abs_deviation(X))  
