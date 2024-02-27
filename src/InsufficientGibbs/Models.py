@@ -538,6 +538,7 @@ class ParetoModel(Model):
         self.shape = shape
         self.type_distribution = Pareto
         self.parameters_dict = {scale.name: scale, shape.name: shape}
+        super().__init__(self.parameters_dict)
         self.distrib_name = "pareto"
         self.init_method = "naive"
         
