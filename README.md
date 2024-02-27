@@ -20,7 +20,7 @@ For latest development version clone the repository and install via pip
 
 ```shell
 git clone https://github.com/antoineluciano/Insufficient-Gibbs-Sampling
-cd src\InsufficientGibbs
+cd src/InsufficientGibbs
 pip install .
 ```
 
