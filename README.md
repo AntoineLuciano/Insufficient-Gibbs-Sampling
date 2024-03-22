@@ -1,6 +1,9 @@
 # Insufficient Gibbs Sampling
+[![arXiv](https://img.shields.io/badge/arXiv-2307.14973-b31b1b.svg)](https://arxiv.org/abs/2307.14973)
+
 [![PyPI version](https://badge.fury.io/py/InsufficientGibbs.svg)](https://badge.fury.io/py/InsufficientGibbs)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
+
 
 <p align="center">
 <img width="1395" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/e8672161-b6b1-4e55-8410-da28aefd361e">
