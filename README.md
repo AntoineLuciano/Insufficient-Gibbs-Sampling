@@ -1,5 +1,6 @@
 # Insufficient Gibbs Sampling
 [![arXiv](https://img.shields.io/badge/stat.ME-2307.14973-red?logo=arxiv&logoColor=red)](https://arxiv.org/abs/2307.14973)
+[![Licence](https://img.shields.io/badge/Licence-MIT-blue)](https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/blob/main/LICENSE.txt)
 [![PyPI version](https://badge.fury.io/py/InsufficientGibbs.svg)](https://badge.fury.io/py/InsufficientGibbs)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
 
