@@ -2,10 +2,20 @@
 [![PyPI version](https://badge.fury.io/py/InsufficientGibbs.svg)](https://badge.fury.io/py/InsufficientGibbs)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
 
-<img width="612" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/0d18834f-6e13-4bb1-9d26-45faed16a745">
+<img width="612" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/9140dbee-e02d-401d-a112-bf79e9515205">
+
+## Table of contents
+ [Abstract](#abstract) • [Install](#install) • [Tutorial](#tutorial) • [Examples](#examples) • [Add new distributions/models](#how-to-add-new-distributions-and-models)
 
 
+
+ 
 The `InsufficientGibbs` package offers functionalities for sampling from posterior parameters when only robust and insufficient statistics of the data are available. A comprehensive explanation of the underlying theory can be found in the associated paper on arXiv https://arxiv.org/abs/2307.14973. Additionally, the code responsible for generating all figures presented in the paper is located in the `figures` folder.
+
+## Abstract
+
+In some applied scenarios, the availability of complete data is restricted, often due to privacy concerns; only aggregated, robust and inefficient statistics derived from the data are made accessible. These robust statistics are not sufficient, but they demonstrate reduced sensitivity to outliers and offer enhanced data protection due to their higher breakdown point. We consider a parametric framework and propose a method to sample from the posterior distribution of parameters conditioned on various robust and inefficient statistics: specifically, the pairs (median, MAD) or (median, IQR), or a collection of quantiles. Our approach leverages a Gibbs sampler and simulates latent augmented data, which facilitates simulation from the posterior distribution of parameters belonging to specific families of distributions. A by-product of these samples from the joint posterior distribution of parameters and data given the observed statistics is that we can estimate Bayes factors based on observed statistics via bridge sampling. We validate and outline the limitations of the proposed methods through toy examples and an application to real-world income data.
+
 
 ## `InsufficientGibbs` package
 
@@ -37,14 +47,14 @@ pip install .
 
 Add `Model` to the end of their function names to use them as models.
 
-# Tutorial
-## Create prior distributions
+## Tutorial
+### Create prior distributions
 
 
 For each parameter of your model, create a variable of type `Distribution` representing its associated prior distribution. You must specify its hyperparameters and optionally its name.
 
 
-## Create the model
+### Create the model
 
 Create a variable of type Model with your selected distribution and its predefined parameters as arguments.
 
@@ -88,7 +98,7 @@ You can display the chain by using the `display_chains` function.
 
 
 
-# How to add new distributions and models
+## How to add new distributions and models
 
 As outlined in our paper, our method is applicable to all continuous distributions with compact support, as it only requires simulation according to a truncated version. Therefore, we provide guidance on how users can seamlessly integrate their own models by simply adding instances to the `Distribution` and `Model` classes.
 
@@ -99,7 +109,7 @@ Similarly, for the `Model` class, an instance should include an initialization f
 To illustrate, we present examples of distributions. First, we showcase a distribution already implemented in SciPy (the Pareto distribution), followed by a custom implementation (the Pareto Type II distribution).
 
 
-## Example of the Pareto Distribution
+### Example of the Pareto Distribution
 
 Add the the instance `Pareto` of the class `Distribution` in the file `Distribution.py`:
 
@@ -173,7 +183,7 @@ class ParetoModel(Model):
         return {self.scale.name: scale, self.shape.name: shape}
 ```
 
-## Example of the Pareto Type II distribution
+### Example of the Pareto Type II distribution
 
 First, define a class `pareto2` that plays the same role as the functions in SciPy.
 
