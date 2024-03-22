@@ -1,5 +1,5 @@
 # Insufficient Gibbs Sampling
-[![arXiv](https://img.shields.io/badge/<stat.ME>-<2307.14973>-<red>?logo=<arxiv>&logoColor=<red>)(https://arxiv.org/abs/2307.14973)
+[![arXiv](https://img.shields.io/badge/stat.ME-2307.14973-red?logo=arxiv&logoColor=red)(https://arxiv.org/abs/2307.14973)]
 [![PyPI version](https://badge.fury.io/py/InsufficientGibbs.svg)](https://badge.fury.io/py/InsufficientGibbs)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
 
