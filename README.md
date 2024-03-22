@@ -2,15 +2,18 @@
 [![PyPI version](https://badge.fury.io/py/InsufficientGibbs.svg)](https://badge.fury.io/py/InsufficientGibbs)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
 
+<p align="center">
 <img width="612" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/9140dbee-e02d-401d-a112-bf79e9515205">
-
-## Table of contents
- [Abstract](#abstract) • [Install](#install) • [Tutorial](#tutorial) • [Examples](#examples) • [Add new distributions/models](#how-to-add-new-distributions-and-models)
+<p>
 
 
 
  
 The `InsufficientGibbs` package offers functionalities for sampling from posterior parameters when only robust and insufficient statistics of the data are available. A comprehensive explanation of the underlying theory can be found in the associated paper on arXiv https://arxiv.org/abs/2307.14973. Additionally, the code responsible for generating all figures presented in the paper is located in the `figures` folder.
+
+## Table of contents
+ [Abstract](#abstract) • [Install](#install) • [Tutorial](#tutorial) • [Examples](#examples) • [Add new distributions/models](#how-to-add-new-distributions-and-models)
+
 
 ## Abstract
 
