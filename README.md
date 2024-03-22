@@ -3,7 +3,7 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/InsufficientGibbs)](https://pypi.org/project/InsufficientGibbs/)
 
 <p align="center">
-<img width="1395" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/42684cf2-2ea9-4da7-bac0-280b6b0d30a7">
+<img width="1395" alt="image" src="https://github.com/AntoineLuciano/Insufficient-Gibbs-Sampling/assets/81982127/846c17e3-72ff-480c-a6cd-363893b9389a">
 <p>
 
 
